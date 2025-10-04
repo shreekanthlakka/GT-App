@@ -1,0 +1,30 @@
+{
+    "name": "notification",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@repo/common": "*",
+        "@repo/common-backend": "*",
+        "@repo/db": "*",
+        "@repo/typescript-config": "*",
+        "express": "^5.1.0",
+        "handlebars": "^4.7.8",
+        "jsonwebtoken": "^9.0.2",
+        "kafkajs": "^2.2.4",
+        "morgan": "^1.10.1",
+        "nodemailer": "^7.0.6",
+        "twilio": "^5.9.0"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.3",
+        "@types/morgan": "^1.9.10",
+        "@types/nodemailer": "^7.0.1"
+    }
+}

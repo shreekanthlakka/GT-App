@@ -1,0 +1,26 @@
+{
+    "name": "@repo/common",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "exports": {
+        "./subjects": "./src/subjects/index.ts",
+        "./schemas": "./src/schemas/index.ts",
+        "./types": "./src/types/index.ts",
+        "./ecommSchemas": "./src/schemas/ecommSchemas.ts",
+        "./topics": "./src/kafkaTopics/index.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "tsc --watch",
+        "build": "tsc",
+        "clean": "rm -rf dist"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@repo/typescript-config": "*",
+        "zod": "^4.1.5"
+    }
+}

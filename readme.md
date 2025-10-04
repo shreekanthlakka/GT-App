@@ -1,30 +1,10 @@
-packages/
-├── common/
-│ ├── schemas
---authSchema.ts
---customerSchema.ts
---partySchema.ts - - -
-|
-│ ├── validators.ts # Validation middleware (second artifact)
-│ ├── events/
-│ │ ├── subjects.ts # Event subjects for Kafka
-│ │ └── index.ts
-│ └── index.ts # Export everything
-├── common-backend/
-│ ├── auth/ # Auth middleware
-│ ├── kafka/ # Kafka base classes
-│ ├── utils/ # General utilities
-│ ├── multer/ # File upload configs
-│ └── logger/ # Logging utilities
-└── db/
-├── schema.prisma # Your Prisma schema
-└── migrations/ # Database migrations
-
-User → Creates Sales, Invoices, Manages Parties
-EcommerceUser → Browses Products → Adds to Cart → Places Order
-Order (from EcommerceUser) → Processed by User → Updates Inventory
-
 ```prisma
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -1193,238 +1173,134 @@ enum MovementType {
 ```
 
 ```typescript
-// packages/common/src/types/index.ts
-export interface PaginationParams {
-    page: number;
-    limit: number;
-    search?: string;
-    sortBy?: string;
-    sortOrder?: "asc" | "desc";
-}
+// ========================================
+// NOTIFICATION SCHEMAS
+// ========================================
 
-export interface PaginationResult<T> {
-    data: T[];
-    pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-        hasNext: boolean;
-        hasPrev: boolean;
-    };
-}
+import { z } from "zod";
 
-export interface ApiResponse<T = any> {
-    success: boolean;
-    message: string;
-    data?: T;
-    error?: any;
-    statusCode: number;
-}
+export const NotificationTypeSchema = z.enum([
+    "PAYMENT_REMINDER",
+    "PAYMENT_CONFIRMATION",
+    "INVOICE_CREATED",
+    "INVOICE_OVERDUE",
+    "SALE_CREATED",
+    "ORDER_CONFIRMATION",
+    "ORDER_STATUS_UPDATE",
+    "STOCK_ALERT",
+    "LOW_STOCK_ALERT",
+    "REORDER_ALERT",
+    "CUSTOM",
+    "WELCOME",
+    "BIRTHDAY",
+    "ANNIVERSARY",
+    "PROMOTIONAL",
+    "SYSTEM_ALERT",
+    "BACKUP_COMPLETED",
+    "BACKUP_FAILED",
+]);
 
-export interface DateRange {
-    startDate?: Date;
-    endDate?: Date;
-}
-
-export interface SearchFilter {
-    search?: string;
-    searchFields: string[];
-}
-
-export interface SortFilter {
-    sortBy?: string;
-    sortOrder?: "asc" | "desc";
-}
-
-// Business specific types
-export interface TextileProductAttributes {
-    fabric?: string;
-    gsm?: number;
-    width?: number;
-    color?: string;
-    design?: string;
-    pattern?: string;
-}
-
-export interface CustomerPreferences {
-    preferredFabrics?: string[];
-    preferredColors?: string[];
-    sizePreferences?: Record<string, any>;
-    occasionPreferences?: string[];
-}
-
-export interface PartyBankDetails {
-    bankName?: string;
-    accountNo?: string;
-    ifsc?: string;
-    branch?: string;
-}
-
-export interface PaymentGatewayResponse {
-    gatewayOrderId?: string;
-    gatewayPaymentId?: string;
-    transactionId?: string;
-    status: string;
-    failureReason?: string;
-}
-
-export interface OCRExtractedData {
-    invoiceNumber?: string;
-    date?: string;
-    amount?: number;
-    partyName?: string;
-    gstNumber?: string;
-    items?: Array<{
-        name: string;
-        quantity: number;
-        price: number;
-        total: number;
-    }>;
-    confidence: number;
-    rawText: string;
-}
-
-export interface NotificationTemplate {
-    name: string;
-    title: string;
-    message: string;
-    variables: string[];
-    channels: string[];
-}
-
-export interface AuditLogData {
-    action: string;
-    entityType: string;
-    entityId: string;
-    oldData?: any;
-    newData?: any;
-    userId?: string;
-    ipAddress?: string;
-    userAgent?: string;
-}
-
-// packages/common/src/utils/constants.ts
-export const TEXTILE_CATEGORIES = [
-    "Sarees",
-    "Suits",
-    "Lehengas",
-    "Blouses",
-    "Fabrics",
-    "Accessories",
-    "Readymade",
-] as const;
-
-export const FABRIC_TYPES = [
-    "Cotton",
-    "Silk",
-    "Polyester",
-    "Georgette",
-    "Chiffon",
-    "Crepe",
-    "Viscose",
-    "Linen",
-    "Wool",
-    "Lycra",
-    "Net",
-    "Satin",
-] as const;
-
-export const PAYMENT_METHODS = [
-    "CASH",
-    "BANK_TRANSFER",
-    "CHEQUE",
-    "UPI",
-    "CARD",
-    "ONLINE",
-    "OTHER",
-] as const;
-
-export const NOTIFICATION_CHANNELS = [
+export const NotificationChannelSchema = z.enum([
     "WHATSAPP",
     "SMS",
     "EMAIL",
     "PUSH",
     "IN_APP",
-] as const;
+]);
 
-export const USER_ROLES = [
-    "OWNER",
-    "MANAGER",
-    "STAFF",
-    "VIEWER",
-    "ACCOUNTANT",
-] as const;
-
-export const INVOICE_STATUSES = [
+export const NotificationStatusSchema = z.enum([
     "PENDING",
-    "PARTIALLY_PAID",
-    "PAID",
-    "OVERDUE",
-    "CANCELLED",
-] as const;
-
-export const SALE_STATUSES = [
-    "PENDING",
-    "PARTIALLY_PAID",
-    "PAID",
-    "OVERDUE",
-    "CANCELLED",
-    "RETURNED",
-] as const;
-
-export const PAYMENT_STATUSES = [
-    "PENDING",
-    "COMPLETED",
+    "SENT",
+    "DELIVERED",
+    "READ",
     "FAILED",
     "CANCELLED",
-    "REFUNDED",
-] as const;
+]);
 
-export const OCR_STATUSES = [
-    "PROCESSING",
-    "COMPLETED",
-    "FAILED",
-    "MANUAL_REVIEW",
-    "CANCELLED",
-] as const;
+export const ReminderTypeSchema = z.enum([
+    "PAYMENT_DUE",
+    "OVERDUE_PAYMENT",
+    "FOLLOW_UP",
+    "CUSTOM",
+    "BIRTHDAY",
+    "ANNIVERSARY",
+    "STOCK_REORDER",
+    "TAX_FILING",
+]);
 
-// Error codes
-export const ERROR_CODES = {
-    VALIDATION_ERROR: "VALIDATION_ERROR",
-    AUTHENTICATION_ERROR: "AUTHENTICATION_ERROR",
-    AUTHORIZATION_ERROR: "AUTHORIZATION_ERROR",
-    NOT_FOUND: "NOT_FOUND",
-    DUPLICATE_ENTRY: "DUPLICATE_ENTRY",
-    INSUFFICIENT_STOCK: "INSUFFICIENT_STOCK",
-    PAYMENT_FAILED: "PAYMENT_FAILED",
-    OCR_PROCESSING_FAILED: "OCR_PROCESSING_FAILED",
-    NOTIFICATION_FAILED: "NOTIFICATION_FAILED",
-    EXTERNAL_SERVICE_ERROR: "EXTERNAL_SERVICE_ERROR",
-    DATABASE_ERROR: "DATABASE_ERROR",
-    INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",
-} as const;
+export const CreateNotificationSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    message: z.string().min(1, "Message is required"),
+    type: NotificationTypeSchema,
+    channel: NotificationChannelSchema,
 
-// Default pagination values
-export const DEFAULT_PAGE_SIZE = 10;
-export const MAX_PAGE_SIZE = 100;
-export const DEFAULT_SORT_ORDER = "desc";
+    recipientType: z.enum(["CUSTOMER", "PARTY", "USER"]),
+    recipientId: z.string().cuid("Invalid recipient ID"),
+    recipientName: z.string().min(1, "Recipient name is required"),
+    recipientContact: z.string().optional(),
 
-// File upload constraints
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-export const ALLOWED_FILE_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/jpg",
-    "application/pdf",
-] as const;
+    templateName: z.string().optional(),
+    templateData: z
+        .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+        .optional(),
 
-// Business rules
-export const OVERDUE_THRESHOLD_DAYS = 30;
-export const LOW_STOCK_THRESHOLD = 10;
-export const CRITICAL_STOCK_THRESHOLD = 5;
+    // Relations
+    partyId: z.string().cuid().optional(),
+    customerId: z.string().cuid().optional(),
+    invoiceId: z.string().cuid().optional(),
+    saleId: z.string().cuid().optional(),
+    paymentId: z.string().cuid().optional(),
+    receiptId: z.string().cuid().optional(),
+    orderId: z.string().cuid().optional(),
+});
 
-// packages/common/src/subjects.ts
+export const SendWhatsAppSchema = z.object({
+    phone: z.string().min(10, "Valid phone number required"),
+    message: z.string().min(1, "Message is required"),
+    templateName: z.string().optional(),
+    templateData: z
+        .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+        .optional(),
+});
+
+export const SendEmailSchema = z.object({
+    email: z.string().email("Valid email required"),
+    subject: z.string().min(1, "Subject is required"),
+    body: z.string().min(1, "Email body is required"),
+    html: z.boolean().default(false),
+    attachments: z
+        .array(
+            z.object({
+                filename: z.string(),
+                path: z.string(),
+                contentType: z.string().optional(),
+            })
+        )
+        .optional(),
+});
+
+export const SendSMSSchema = z.object({
+    phone: z.string().min(10, "Valid phone number required"),
+    message: z.string().min(1, "Message is required"),
+});
+
+export const CreateReminderSchema = z.object({
+    message: z.string().min(1, "Message is required"),
+    type: ReminderTypeSchema,
+    scheduledAt: z.string().datetime("Invalid scheduled date"),
+    channel: z.enum(["whatsapp", "sms", "email"]),
+    metadata: z
+        .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+        .optional(),
+    customerId: z.string().cuid("Invalid customer ID"),
+});
+
+export type CreateNotificationType = z.infer<typeof CreateNotificationSchema>;
+export type SendWhatsAppType = z.infer<typeof SendWhatsAppSchema>;
+export type SendEmailType = z.infer<typeof SendEmailSchema>;
+export type SendSMSType = z.infer<typeof SendSMSSchema>;
+
+// packages/common/events/subjects.ts
 
 // Event subjects for Kafka messaging
 export enum Subjects {
@@ -1460,7 +1336,7 @@ export enum Subjects {
     AccessAttemptFailed = "security:access-failed",
 
     // ========================================
-    // 👥 PARTY/SUPPLIER MANAGEMENT
+    // 💥 PARTY/SUPPLIER MANAGEMENT
     // ========================================
 
     PartyCreated = "party:created",
@@ -1475,7 +1351,7 @@ export enum Subjects {
     PartyStatementSent = "party:statement-sent",
 
     // ========================================
-    // 🛍️ CUSTOMER MANAGEMENT
+    // 🛒 CUSTOMER MANAGEMENT
     // ========================================
 
     CustomerCreated = "customer:created",
@@ -1487,6 +1363,7 @@ export enum Subjects {
     CustomerCreditLimitUpdated = "customer:credit-limit-updated",
     CustomerCreditLimitExceeded = "customer:credit-limit-exceeded",
     CustomerCreditLimitWarning = "customer:credit-limit-warning",
+    CustomerFirstVisit = "customer:first-visit",
 
     // ========================================
     // 📄 INVOICE MANAGEMENT
@@ -1517,9 +1394,10 @@ export enum Subjects {
     InvoiceReminderSent = "invoice:reminder-sent",
     InvoiceFollowUpRequired = "invoice:follow-up-required",
     InvoiceGSTValidated = "invoice:gst-validated",
+    InvoiceAnalyticsGenerated = "invoice:analytics-generated",
 
     // ========================================
-    // 🛒 SALES MANAGEMENT
+    // 🛍 SALES MANAGEMENT
     // ========================================
 
     // Sale Lifecycle
@@ -1543,50 +1421,48 @@ export enum Subjects {
     SaleReceiptPrinted = "sale:receipt-printed",
     SaleReceiptEmailed = "sale:receipt-emailed",
     SaleReceiptWhatsAppSent = "sale:receipt-whatsapp-sent",
-    SaleTrendAnalyzed = "sale:trent-analised",
+    SaleTrendAnalyzed = "sale:trend-analyzed",
 
     // ========================================
-    // 💰 PAYMENT MANAGEMENT
+    // 💰 INVOICE PAYMENT MANAGEMENT
     // ========================================
 
-    // Payment Lifecycle
-    PaymentCreated = "payment:created",
-    PaymentUpdated = "payment:updated",
-    PaymentDeleted = "payment:deleted",
-    PaymentVoided = "payment:voided",
+    // Invoice Payment Lifecycle
+    InvoicePaymentCreated = "invoice-payment:created",
+    InvoicePaymentUpdated = "invoice-payment:updated",
+    InvoicePaymentDeleted = "invoice-payment:deleted",
+    InvoicePaymentVoided = "invoice-payment:voided",
 
-    // Payment Processing
-    PaymentReceived = "payment:received",
-    PaymentMade = "payment:made",
-    PaymentProcessed = "payment:processed",
-    PaymentFailed = "payment:failed",
-    PaymentPending = "payment:pending",
-    PaymentConfirmed = "payment:confirmed",
-    PaymentReconciled = "payment:reconciled",
-    PaymentRefunded = "payment:refunded",
+    // Invoice Payment Processing
+    InvoicePaymentProcessed = "invoice-payment:processed",
+    InvoicePaymentFailed = "invoice-payment:failed",
+    InvoicePaymentPending = "invoice-payment:pending",
+    InvoicePaymentConfirmed = "invoice-payment:confirmed",
+    InvoicePaymentReconciled = "invoice-payment:reconciled",
+    InvoicePaymentRefunded = "invoice-payment:refunded",
 
-    // Payment Methods
-    CashPaymentReceived = "payment:cash-received",
-    UPIPaymentReceived = "payment:upi-received",
-    BankTransferReceived = "payment:bank-transfer-received",
-    ChequePaymentReceived = "payment:cheque-received",
-    CardPaymentReceived = "payment:card-received",
-    PaymentTrendAnalyzed = "payment:trend-analysed",
-    PaymentGatewayWebhook = "payment:gateway-webhook",
-    PaymentGatewayError = "payment:gateway-error",
-    PaymentSettlement = "payment:settlement",
+    // Invoice Payment Methods
+    CashInvoicePaymentMade = "invoice-payment:cash-made",
+    UPIInvoicePaymentMade = "invoice-payment:upi-made",
+    BankTransferInvoicePaymentMade = "invoice-payment:bank-transfer-made",
+    ChequeInvoicePaymentMade = "invoice-payment:cheque-made",
+    CardInvoicePaymentMade = "invoice-payment:card-made",
+    InvoicePaymentTrendAnalyzed = "invoice-payment:trend-analysed",
+    InvoicePaymentAllocated = "invoice-payment:allocated",
+    BankTransferStatusUpdated = "invoice-payment:banktransfer-statusupdated",
+    ChequeStatusUpdated = "invoice-payment:chequestatusupdated",
 
     // ========================================
-    // 🧾 RECEIPT MANAGEMENT
+    // 🧾 SALE RECEIPT MANAGEMENT
     // ========================================
 
-    ReceiptCreated = "receipt:created",
-    ReceiptUpdated = "receipt:updated",
-    ReceiptDeleted = "receipt:deleted",
-    ReceiptVoided = "receipt:voided",
-    ReceiptPrinted = "receipt:printed",
-    ReceiptEmailed = "receipt:emailed",
-    ReceiptWhatsAppSent = "receipt:whatsapp-sent",
+    SaleReceiptCreated = "sale-receipt:created",
+    SaleReceiptUpdated = "sale-receipt:updated",
+    SaleReceiptDeleted = "sale-receipt:deleted",
+    SaleReceiptVoided = "sale-receipt:voided",
+    // SaleReceiptPrinted = "sale-receipt:printed",
+    // SaleReceiptEmailed = "sale-receipt:emailed",
+    // SaleReceiptWhatsAppSent = "sale-receipt:whatsapp-sent",
 
     // ========================================
     // 📊 LEDGER & ACCOUNTING
@@ -1685,24 +1561,24 @@ export enum Subjects {
 
     // Auto-Creation from OCR
     InvoiceAutoCreatedFromOCR = "invoice:auto-created-from-ocr",
-    ReceiptAutoCreatedFromOCR = "receipt:auto-created-from-ocr",
-    PaymentAutoCreatedFromOCR = "payment:auto-created-from-ocr",
+    SaleReceiptAutoCreatedFromOCR = "sale-receipt:auto-created-from-ocr",
+    InvoicePaymentAutoCreatedFromOCR = "invoice-payment:auto-created-from-ocr",
     ExpenseAutoCreatedFromOCR = "expense:auto-created-from-ocr",
 
     // ========================================
-    // 📦 INVENTORY & PRODUCT MANAGEMENT
+    // 📦 INVENTORY & ITEM MANAGEMENT
     // ========================================
 
-    // Product Lifecycle
-    ProductCreated = "product:created",
-    ProductUpdated = "product:updated",
-    ProductDeleted = "product:deleted",
-    ProductActivated = "product:activated",
-    ProductDeactivated = "product:deactivated",
-    ProductPriceUpdated = "product:price-updated",
-    ProductCostUpdated = "product:cost-updated",
-    ProductCategoryChanged = "product:category-changed",
-    ProductImageUpdated = "product:image-updated",
+    // Inventory Item Lifecycle
+    InventoryItemCreated = "inventory-item:created",
+    InventoryItemUpdated = "inventory-item:updated",
+    InventoryItemDeleted = "inventory-item:deleted",
+    InventoryItemActivated = "inventory-item:activated",
+    InventoryItemDeactivated = "inventory-item:deactivated",
+    InventoryItemPriceUpdated = "inventory-item:price-updated",
+    InventoryItemCostUpdated = "inventory-item:cost-updated",
+    InventoryItemCategoryChanged = "inventory-item:category-changed",
+    InventoryItemImageUpdated = "inventory-item:image-updated",
 
     // Stock Management
     StockAdded = "stock:added",
@@ -1728,7 +1604,50 @@ export enum Subjects {
     InventoryAdjustmentMade = "inventory:adjustment-made",
 
     // ========================================
-    // 🛒 E-COMMERCE & ORDERS
+    // 👥 E-COMMERCE USER MANAGEMENT
+    // ========================================
+
+    // E-commerce User Lifecycle
+    EcommerceUserCreated = "ecommerce-user:created",
+    EcommerceUserUpdated = "ecommerce-user:updated",
+    EcommerceUserDeleted = "ecommerce-user:deleted",
+    EcommerceUserActivated = "ecommerce-user:activated",
+    EcommerceUserDeactivated = "ecommerce-user:deactivated",
+    EcommerceUserBlocked = "ecommerce-user:blocked",
+    EcommerceUserUnblocked = "ecommerce-user:unblocked",
+
+    // E-commerce Authentication
+    EcommerceUserLoggedIn = "ecommerce-user:logged-in",
+    EcommerceUserLoggedOut = "ecommerce-user:logged-out",
+    EcommerceUserLoginFailed = "ecommerce-user:login-failed",
+    EcommerceUserPasswordChanged = "ecommerce-user:password-changed",
+    EcommerceUserPasswordResetRequested = "ecommerce-user:password-reset-requested",
+    EcommerceUserPasswordResetCompleted = "ecommerce-user:password-reset-completed",
+
+    // E-commerce User Verification
+    EcommerceUserEmailVerified = "ecommerce-user:email-verified",
+    EcommerceUserPhoneVerified = "ecommerce-user:phone-verified",
+    EcommerceUserEmailVerificationSent = "ecommerce-user:email-verification-sent",
+    EcommerceUserPhoneVerificationSent = "ecommerce-user:phone-verification-sent",
+
+    // E-commerce User Profile
+    EcommerceUserProfileUpdated = "ecommerce-user:profile-updated",
+    EcommerceUserAddressAdded = "ecommerce-user:address-added",
+    EcommerceUserAddressUpdated = "ecommerce-user:address-updated",
+    EcommerceUserAddressDeleted = "ecommerce-user:address-deleted",
+    EcommerceUserPreferencesUpdated = "ecommerce-user:preferences-updated",
+
+    // Social Login
+    EcommerceUserSocialLoginLinked = "ecommerce-user:social-login-linked",
+    EcommerceUserSocialLoginUnlinked = "ecommerce-user:social-login-unlinked",
+
+    // E-commerce User Session
+    EcommerceUserSessionCreated = "ecommerce-user:session-created",
+    EcommerceUserSessionExpired = "ecommerce-user:session-expired",
+    EcommerceUserSessionTerminated = "ecommerce-user:session-terminated",
+
+    // ========================================
+    // 🛍 E-COMMERCE & ORDERS
     // ========================================
 
     // Order Management
@@ -1806,7 +1725,7 @@ export enum Subjects {
     SystemUpdated = "system:updated",
     SystemMetricsCollected = "system:metrics-collected",
     SystemAlertTriggered = "system:alert-triggered",
-    APIEndpointAccessed = "system:apiendpoint-accessed",
+    APIEndpointAccessed = "system:api-endpoint-accessed",
     WebhookReceived = "system:webhook-received",
     SystemConfigUpdated = "system:config-updated",
 
@@ -1842,11 +1761,11 @@ export enum Subjects {
     CustomerLoyaltyPointsEarned = "customer:loyalty-points-earned",
     CustomerLoyaltyPointsRedeemed = "customer:loyalty-points-redeemed",
 
-    // Saree/Product Specific
-    SareeDisplayed = "saree:displayed",
-    SareeDemonstrated = "saree:demonstrated",
-    SareeReserved = "saree:reserved",
-    SareeCustomized = "saree:customized",
+    // Textile/Inventory Specific
+    TextileDisplayed = "textile:displayed",
+    TextileDemonstrated = "textile:demonstrated",
+    TextileReserved = "textile:reserved",
+    TextileCustomized = "textile:customized",
 
     // Seasonal Events
     FestivalDiscountApplied = "festival:discount-applied",
@@ -1881,7 +1800,8 @@ export const SubjectCategories = {
     CORE_BUSINESS: [
         Subjects.InvoiceCreated,
         Subjects.SaleCreated,
-        Subjects.PaymentReceived,
+        Subjects.InvoicePaymentCreated,
+        Subjects.SaleReceiptCreated,
         Subjects.CustomerCreated,
         Subjects.PartyCreated,
     ],
@@ -1897,10 +1817,11 @@ export const SubjectCategories = {
         Subjects.DocumentUploaded,
         Subjects.OCRJobCompleted,
         Subjects.InvoiceAutoCreatedFromOCR,
+        Subjects.SaleReceiptAutoCreatedFromOCR,
     ],
 
     INVENTORY: [
-        Subjects.ProductCreated,
+        Subjects.InventoryItemCreated,
         Subjects.StockLow,
         Subjects.StockOut,
         Subjects.InventoryCountCompleted,
@@ -1926,7 +1847,7 @@ export const EventPriorities = {
         Subjects.DataBackupFailed,
         Subjects.SuspiciousActivityDetected,
         Subjects.CashShortageDetected,
-        Subjects.PaymentFailed,
+        Subjects.InvoicePaymentFailed,
     ],
 
     HIGH: [
@@ -1939,7 +1860,7 @@ export const EventPriorities = {
     MEDIUM: [
         Subjects.InvoiceCreated,
         Subjects.SaleCreated,
-        Subjects.PaymentReceived,
+        Subjects.InvoicePaymentCreated,
         Subjects.CustomerCreated,
     ],
 
@@ -1950,255 +1871,6 @@ export const EventPriorities = {
         Subjects.UserLoggedIn,
     ],
 } as const;
-
-export * from "./auth";
-export * from "./customer";
-export * from "./party";
-export * from "./product";
-export * from "./sale";
-export * from "./invoice";
-export * from "./payment";
-export * from "./ocr";
-export * from "./notification";
-
-// Common validation schemas
-import { z } from "zod";
-import {
-    CreateCustomerSchema,
-    CustomerQuerySchema,
-    UpdateCustomerSchema,
-} from "./customer";
-import {
-    ChangePasswordSchema,
-    LoginSchema,
-    RegisterSchema,
-    UpdateProfileSchema,
-} from "./auth";
-import {
-    CreatePartySchema,
-    PartyQuerySchema,
-    UpdatePartySchema,
-} from "./party";
-import {
-    CreateInvoiceSchema,
-    InvoiceQuerySchema,
-    UpdateInvoiceSchema,
-} from "./invoice";
-import { CreateSaleSchema, SaleQuerySchema, UpdateSaleSchema } from "./sale";
-import {
-    CreatePaymentSchema,
-    GenerateReportSchema,
-    PaymentQuerySchema,
-    UpdatePaymentSchema,
-} from "./payment";
-import {
-    CreateProductSchema,
-    ProductQuerySchema,
-    StockMovementSchema,
-    UpdateProductSchema,
-} from "./product";
-import { CreateNotificationSchema, CreateReminderSchema } from "./notification";
-import { CreateOCRJobSchema } from "./ocr";
-
-export const PaginationSchema = z.object({
-    page: z.coerce.number().min(1).default(1),
-    limit: z.coerce.number().min(1).max(100).default(10),
-    search: z.string().optional(),
-    sortBy: z.string().optional(),
-    sortOrder: z.enum(["asc", "desc"]).default("desc"),
-});
-
-export const DateRangeSchema = z.object({
-    startDate: z.string().datetime().optional(),
-    endDate: z.string().datetime().optional(),
-});
-
-export const IdParamSchema = z.object({
-    id: z.string().cuid("Invalid ID format"),
-});
-
-// ========================================
-// 🏪 SHOP OPERATIONS SCHEMAS
-// ========================================
-
-export const ShopTimingSchema = z.object({
-    openTime: z
-        .string()
-        .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-    closeTime: z
-        .string()
-        .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-    isHoliday: z.boolean().default(false),
-    date: z.string().datetime(),
-});
-
-export const CashCountSchema = z.object({
-    denomination: z.object({
-        notes: z.object({
-            "2000": z.number().min(0).default(0),
-            "500": z.number().min(0).default(0),
-            "200": z.number().min(0).default(0),
-            "100": z.number().min(0).default(0),
-            "50": z.number().min(0).default(0),
-            "20": z.number().min(0).default(0),
-            "10": z.number().min(0).default(0),
-        }),
-        coins: z.object({
-            "10": z.number().min(0).default(0),
-            "5": z.number().min(0).default(0),
-            "2": z.number().min(0).default(0),
-            "1": z.number().min(0).default(0),
-        }),
-    }),
-    totalCash: z.number().min(0),
-    expectedCash: z.number().min(0),
-    variance: z.number(),
-    notes: z.string().optional(),
-});
-
-export type PaginationType = z.infer<typeof PaginationSchema>;
-export type DateRangeType = z.infer<typeof DateRangeSchema>;
-export type IdParamType = z.infer<typeof IdParamSchema>;
-export type ShopTimingType = z.infer<typeof ShopTimingSchema>;
-export type CashCountType = z.infer<typeof CashCountSchema>;
-
-// Export grouped schemas for easy imports
-export const AuthSchemas = {
-    CreateUser: RegisterSchema,
-    UpdateUser: UpdateProfileSchema,
-    Login: LoginSchema,
-    ChangePassword: ChangePasswordSchema,
-} as const;
-
-export const BusinessSchemas = {
-    CreateCustomer: CreateCustomerSchema,
-    UpdateCustomer: UpdateCustomerSchema,
-    CreateParty: CreatePartySchema,
-    UpdateParty: UpdatePartySchema,
-    CreateInvoice: CreateInvoiceSchema,
-    UpdateInvoice: UpdateInvoiceSchema,
-    CreateSale: CreateSaleSchema,
-    UpdateSale: UpdateSaleSchema,
-    CreatePayment: CreatePaymentSchema,
-    UpdatePayment: UpdatePaymentSchema,
-} as const;
-
-export const InventorySchemas = {
-    CreateProduct: CreateProductSchema,
-    UpdateProduct: UpdateProductSchema,
-    // CreateTextileProduct: TextileProductSchema,
-    CreateStockMovement: StockMovementSchema,
-} as const;
-
-export const QuerySchemas = {
-    Pagination: PaginationSchema,
-    DateRange: DateRangeSchema,
-    CustomerQuery: CustomerQuerySchema,
-    InvoiceQuery: InvoiceQuerySchema,
-    SaleQuery: SaleQuerySchema,
-    PaymentQuery: PaymentQuerySchema,
-    ProductQuery: ProductQuerySchema,
-    PartyQuery: PartyQuerySchema,
-} as const;
-
-export const NotificationSchemas = {
-    CreateNotification: CreateNotificationSchema,
-    CreateReminder: CreateReminderSchema,
-} as const;
-
-export const ReportSchemas = {
-    GenerateReport: GenerateReportSchema,
-} as const;
-
-export const ShopSchemas = {
-    ShopTiming: ShopTimingSchema,
-    CashCount: CashCountSchema,
-} as const;
-
-export const OCRSchemas = {
-    CreateOCRJob: CreateOCRJobSchema,
-} as const;
-
-import { z } from "zod";
-
-export const UserRoleSchema = z.enum([
-    "OWNER",
-    "MANAGER",
-    "STAFF",
-    "VIEWER",
-    "ACCOUNTANT",
-]);
-
-export const RegisterSchema = z.object({
-    email: z.string().email("Invalid email format"),
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    phone: z.string().optional(),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    role: UserRoleSchema.default("OWNER"),
-});
-
-export const LoginSchema = z.object({
-    email: z.string().email("Invalid email format"),
-    password: z.string().min(1, "Password is required"),
-});
-
-export const ChangePasswordSchema = z
-    .object({
-        currentPassword: z.string().min(1, "Current password is required"),
-        newPassword: z
-            .string()
-            .min(6, "New password must be at least 6 characters"),
-        confirmPassword: z.string().min(6, "Confirm password is required"),
-    })
-    .refine((data) => data.newPassword === data.confirmPassword, {
-        message: "Passwords don't match",
-        path: ["confirmPassword"],
-    });
-
-export const ForgotPasswordSchema = z.object({
-    email: z.string().email("Invalid email format"),
-});
-
-export const ResetPasswordSchema = z
-    .object({
-        token: z.string().min(1, "Reset token is required"),
-        newPassword: z
-            .string()
-            .min(6, "Password must be at least 6 characters"),
-        confirmPassword: z.string().min(6, "Confirm password is required"),
-    })
-    .refine((data) => data.newPassword === data.confirmPassword, {
-        message: "Passwords don't match",
-        path: ["confirmPassword"],
-    });
-
-export const RefreshTokenSchema = z.object({
-    refreshToken: z.string().min(1, "Refresh token is required"),
-});
-
-export const UpdateProfileSchema = z.object({
-    name: z.string().min(2, "Name must be at least 2 characters").optional(),
-    phone: z.string().optional(),
-});
-
-export const TwoFactorSetupSchema = z.object({
-    secret: z.string().min(1, "2FA secret is required"),
-    token: z.string().length(6, "Token must be 6 digits"),
-});
-
-export const TwoFactorVerifySchema = z.object({
-    token: z.string().length(6, "Token must be 6 digits"),
-});
-
-export type RegisterType = z.infer<typeof RegisterSchema>;
-export type LoginType = z.infer<typeof LoginSchema>;
-export type ChangePasswordType = z.infer<typeof ChangePasswordSchema>;
-export type ForgotPasswordType = z.infer<typeof ForgotPasswordSchema>;
-export type ResetPasswordType = z.infer<typeof ResetPasswordSchema>;
-export type RefreshTokenType = z.infer<typeof RefreshTokenSchema>;
-export type UpdateProfileType = z.infer<typeof UpdateProfileSchema>;
-export type TwoFactorSetupType = z.infer<typeof TwoFactorSetupSchema>;
-export type TwoFactorVerifyType = z.infer<typeof TwoFactorVerifySchema>;
 
 // packages/common-backend/src/events/interfaces/base-interfaces.ts
 
@@ -2219,402 +1891,6 @@ export interface KafkaMessage<T extends BaseEvent> {
     version: string;
     userId?: string;
     correlationId?: string;
-}
-
-// packages/common-backend/src/events/interfaces/event-interfaces.ts
-import { Subjects } from "@repo/common/subjects";
-
-// Base event interface
-export interface BaseEvent {
-    subject: Subjects;
-    data: any;
-}
-
-// Kafka message wrapper
-export interface KafkaMessage<T extends BaseEvent> {
-    subject: T["subject"];
-    data: T["data"];
-    timestamp: string;
-    eventId: string;
-    version: string;
-    userId?: string;
-    correlationId?: string;
-}
-
-// ========================================
-// AUTHENTICATION EVENTS
-// ========================================
-
-export interface UserCreatedEvent extends BaseEvent {
-    subject: Subjects.UserCreated;
-    data: {
-        id: string;
-        email: string;
-        name: string;
-        phone?: string;
-        role: string;
-        isActive: boolean;
-        createdAt: string;
-        userId: string;
-    };
-}
-
-export interface UserUpdatedEvent extends BaseEvent {
-    subject: Subjects.UserUpdated;
-    data: {
-        id: string;
-        name?: string;
-        phone?: string;
-        userId: string;
-        role: string;
-        email?: string;
-    };
-}
-
-export interface UserDeletedEvent extends BaseEvent {
-    subject: Subjects.UserDeleted;
-    data: {
-        id: string; // The deleted user ID
-        email: string; // Keep email for audit purposes
-        deletedAt: string;
-        deletedBy?: string; // Who deleted the user
-        reason?: string; // Optional deletion reason
-    };
-}
-
-export interface UserLoggedInEvent extends BaseEvent {
-    subject: Subjects.UserLoggedIn;
-    data: {
-        userId: string;
-        email: string;
-        sessionId: string;
-        ipAddress?: string;
-        userAgent?: string;
-        loginAt: string;
-    };
-}
-
-export interface UserLoggedOutEvent extends BaseEvent {
-    subject: Subjects.UserLoggedOut;
-    data: {
-        userId: string;
-        sessionId: string;
-        logoutAt: string;
-    };
-}
-
-export interface SessionCreatedEvent extends BaseEvent {
-    subject: Subjects.SessionCreated;
-    data: {
-        sessionId: string;
-        userId: string;
-        expiresAt: string;
-        deviceInfo?: any;
-        ipAddress?: string;
-        userAgent?: string;
-        createdAt: string;
-    };
-}
-
-// ========================================
-// CUSTOMER EVENTS
-// ========================================
-
-export interface CustomerCreatedEvent extends BaseEvent {
-    subject: Subjects.CustomerCreated;
-    data: {
-        id: string;
-        name: string;
-        phone?: string;
-        email?: string;
-        address?: string;
-        city?: string;
-        state?: string;
-        creditLimit: number;
-        userId: string;
-        createdAt: string;
-    };
-}
-
-export interface CustomerUpdatedEvent extends BaseEvent {
-    subject: Subjects.CustomerUpdated;
-    data: {
-        id: string;
-        name: string;
-        phone?: string;
-        email?: string;
-        creditLimit: number;
-        userId: string;
-        updatedAt: string;
-        changes: Record<string, any>;
-    };
-}
-
-// ========================================
-// PARTY EVENTS
-// ========================================
-
-export interface PartyCreatedEvent extends BaseEvent {
-    subject: Subjects.PartyCreated;
-    data: {
-        id: string;
-        name: string;
-        gstNo?: string;
-        phone?: string;
-        email?: string;
-        address?: string;
-        city?: string;
-        state?: string;
-        category?: string;
-        creditLimit: number;
-        userId: string;
-        createdAt: string;
-    };
-}
-
-export interface PartyUpdatedEvent extends BaseEvent {
-    subject: Subjects.PartyUpdated;
-    data: {
-        name?: string;
-        gstNo?: string;
-        phone?: string;
-        email?: string;
-        address?: string;
-        city?: string;
-        state?: string;
-        category?: string;
-        creditLimit: number;
-        userId: string;
-    };
-}
-
-export interface PartyDeletedEvent extends BaseEvent {
-    subject: Subjects.PartyDeleted;
-    data: {
-        // TODO : what data fields to add
-    };
-}
-
-// ========================================
-// SALE EVENTS
-// ========================================
-
-export interface SaleCreatedEvent extends BaseEvent {
-    subject: Subjects.SaleCreated;
-    data: {
-        id: string;
-        voucherId: string;
-        saleNo: string;
-        date: string;
-        amount: number;
-        paidAmount: number;
-        remainingAmount: number;
-        status: string;
-        items: Array<{
-            name: string;
-            quantity: number;
-            price: number;
-            total: number;
-            productId?: string;
-        }>;
-        customerId: string;
-        customerName: string;
-        userId: string;
-        createdAt: string;
-    };
-}
-
-export interface SaleUpdatedEvent extends BaseEvent {
-    subject: Subjects.SaleUpdated;
-    data: {
-        id: string;
-        status: string;
-        paidAmount: number;
-        remainingAmount: number;
-        customerId: string;
-        userId: string;
-        updatedAt: string;
-        changes: Record<string, any>;
-    };
-}
-
-// ========================================
-// INVOICE EVENTS
-// ========================================
-
-export interface InvoiceCreatedEvent extends BaseEvent {
-    subject: Subjects.InvoiceCreated;
-    data: {
-        id: string;
-        voucherId: string;
-        invoiceNo: string;
-        date: string;
-        dueDate?: string;
-        amount: number;
-        paidAmount: number;
-        remainingAmount: number;
-        status: string;
-        partyId: string;
-        partyName: string;
-        userId: string;
-        createdAt: string;
-    };
-}
-
-export interface InvoiceOverdueEvent extends BaseEvent {
-    subject: Subjects.InvoiceOverdue;
-    data: {
-        id: string;
-        invoiceNo: string;
-        amount: number;
-        remainingAmount: number;
-        dueDate: string;
-        daysPastDue: number;
-        partyId: string;
-        partyName: string;
-        partyPhone?: string;
-        partyEmail?: string;
-        userId: string;
-    };
-}
-
-// ========================================
-// PAYMENT EVENTS
-// ========================================
-
-export interface PaymentCreatedEvent extends BaseEvent {
-    subject: Subjects.PaymentCreated;
-    data: {
-        id: string;
-        voucherId: string;
-        amount: number;
-        date: string;
-        method: string;
-        type: string;
-        status: string;
-        reference?: string;
-        partyId?: string;
-        customerId?: string;
-        invoiceId?: string;
-        saleId?: string;
-        userId: string;
-        createdAt: string;
-    };
-}
-
-export interface PaymentReceivedEvent extends BaseEvent {
-    subject: Subjects.PaymentReceived;
-    data: {
-        id: string;
-        amount: number;
-        method: string;
-        reference?: string;
-        customerId?: string;
-        customerName?: string;
-        partyId?: string;
-        partyName?: string;
-        invoiceId?: string;
-        saleId?: string;
-        userId: string;
-        receivedAt: string;
-    };
-}
-
-// ========================================
-// PRODUCT EVENTS
-// ========================================
-
-export interface ProductCreatedEvent extends BaseEvent {
-    subject: Subjects.ProductCreated;
-    data: {
-        id: string;
-        name: string;
-        category: string;
-        brand?: string;
-        price: number;
-        stock: number;
-        minStock: number;
-        fabric?: string;
-        color?: string;
-        userId: string;
-        createdAt: string;
-    };
-}
-
-export interface StockLowEvent extends BaseEvent {
-    subject: Subjects.StockLow;
-    data: {
-        productId: string;
-        productName: string;
-        currentStock: number;
-        minStock: number;
-        category: string;
-        userId: string;
-        alertAt: string;
-    };
-}
-
-// ========================================
-// NOTIFICATION EVENTS
-// ========================================
-
-export interface WhatsAppMessageSentEvent extends BaseEvent {
-    subject: Subjects.WhatsAppMessageSent;
-    data: {
-        messageId: string;
-        phone: string;
-        message: string;
-        templateName?: string;
-        success: boolean;
-        externalId?: string;
-        customerId?: string;
-        partyId?: string;
-        userId: string;
-        sentAt: string;
-    };
-}
-
-export interface EmailSentEvent extends BaseEvent {
-    subject: Subjects.EmailSent;
-    data: {
-        messageId: string;
-        email: string;
-        subject: string;
-        success: boolean;
-        customerId?: string;
-        partyId?: string;
-        userId: string;
-        sentAt: string;
-    };
-}
-
-// ========================================
-// OCR EVENTS
-// ========================================
-
-export interface DocumentUploadedEvent extends BaseEvent {
-    subject: Subjects.DocumentUploaded;
-    data: {
-        id: string;
-        imageUrl: string;
-        originalName?: string;
-        fileSize?: number;
-        userId: string;
-        uploadedAt: string;
-    };
-}
-
-export interface OCRJobCompletedEvent extends BaseEvent {
-    subject: Subjects.OCRJobCompleted;
-    data: {
-        id: string;
-        imageUrl: string;
-        extractedData: any;
-        confidence?: number;
-        status: string;
-        userId: string;
-        completedAt: string;
-    };
 }
 
 // packages/common-backend/src/events/interfaces/customerInterfaces.ts
@@ -2798,20 +2074,20 @@ export interface CustomerCreditLimitWarningEvent extends BaseEvent {
 // CUSTOMER LIFECYCLE MILESTONES
 // ========================================
 
-// export interface CustomerFirstVisitEvent extends BaseEvent {
-//     subject: Subjects.CustomerFirstVisit;
-//     data: {
-//         customerId: string;
-//         customerName: string;
-//         visitDate: string;
-//         visitType: "PHYSICAL" | "ONLINE" | "PHONE";
-//         source?: string;
-//         referredBy?: string;
-//         initialInterest?: string[];
-//         staffAssigned?: string;
-//         welcomeMessageSent?: boolean;
-//     };
-// }
+export interface CustomerFirstVisitEvent extends BaseEvent {
+    subject: Subjects.CustomerFirstVisit;
+    data: {
+        customerId: string;
+        customerName: string;
+        visitDate: string;
+        visitType: "PHYSICAL" | "ONLINE" | "PHONE";
+        source?: string;
+        referredBy?: string;
+        initialInterest?: string[];
+        staffAssigned?: string;
+        welcomeMessageSent?: boolean;
+    };
+}
 
 // export interface CustomerBecameVIPEvent extends BaseEvent {
 //     subject: Subjects.CustomerBecameVIP;
@@ -3047,7 +2323,7 @@ export type CustomerEventTypes =
     | CustomerCreditLimitUpdatedEvent
     | CustomerCreditLimitExceededEvent
     | CustomerCreditLimitWarningEvent
-    // | CustomerFirstVisitEvent
+    | CustomerFirstVisitEvent
     // | CustomerBecameVIPEvent
     // | CustomerReturnVisitEvent
     // | CustomerLongTimeNoVisitEvent
@@ -3058,176 +2334,32 @@ export type CustomerEventTypes =
 // | CustomerComplaintReceivedEvent
 // | CustomerFeedbackReceivedEvent;
 
-// ========================================
-// NOTIFICATION SCHEMAS
-// ========================================
-
-import { z } from "zod";
-
-export const NotificationTypeSchema = z.enum([
-    "PAYMENT_REMINDER",
-    "PAYMENT_CONFIRMATION",
-    "INVOICE_CREATED",
-    "INVOICE_OVERDUE",
-    "SALE_CREATED",
-    "ORDER_CONFIRMATION",
-    "ORDER_STATUS_UPDATE",
-    "STOCK_ALERT",
-    "LOW_STOCK_ALERT",
-    "REORDER_ALERT",
-    "CUSTOM",
-    "WELCOME",
-    "BIRTHDAY",
-    "ANNIVERSARY",
-    "PROMOTIONAL",
-    "SYSTEM_ALERT",
-    "BACKUP_COMPLETED",
-    "BACKUP_FAILED",
-]);
-
-export const NotificationChannelSchema = z.enum([
-    "WHATSAPP",
-    "SMS",
-    "EMAIL",
-    "PUSH",
-    "IN_APP",
-]);
-
-export const NotificationStatusSchema = z.enum([
-    "PENDING",
-    "SENT",
-    "DELIVERED",
-    "READ",
-    "FAILED",
-    "CANCELLED",
-]);
-
-export const ReminderTypeSchema = z.enum([
-    "PAYMENT_DUE",
-    "OVERDUE_PAYMENT",
-    "FOLLOW_UP",
-    "CUSTOM",
-    "BIRTHDAY",
-    "ANNIVERSARY",
-    "STOCK_REORDER",
-    "TAX_FILING",
-]);
-
-export const CreateNotificationSchema = z.object({
-    title: z.string().min(1, "Title is required"),
-    message: z.string().min(1, "Message is required"),
-    type: NotificationTypeSchema,
-    channel: NotificationChannelSchema,
-
-    recipientType: z.enum(["CUSTOMER", "PARTY", "USER"]),
-    recipientId: z.string().cuid("Invalid recipient ID"),
-    recipientName: z.string().min(1, "Recipient name is required"),
-    recipientContact: z.string().optional(),
-
-    templateName: z.string().optional(),
-    templateData: z
-        .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
-        .optional(),
-
-    // Relations
-    partyId: z.string().cuid().optional(),
-    customerId: z.string().cuid().optional(),
-    invoiceId: z.string().cuid().optional(),
-    saleId: z.string().cuid().optional(),
-    paymentId: z.string().cuid().optional(),
-    receiptId: z.string().cuid().optional(),
-    orderId: z.string().cuid().optional(),
-});
-
-export const SendWhatsAppSchema = z.object({
-    phone: z.string().min(10, "Valid phone number required"),
-    message: z.string().min(1, "Message is required"),
-    templateName: z.string().optional(),
-    templateData: z
-        .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
-        .optional(),
-});
-
-export const SendEmailSchema = z.object({
-    email: z.string().email("Valid email required"),
-    subject: z.string().min(1, "Subject is required"),
-    body: z.string().min(1, "Email body is required"),
-    html: z.boolean().default(false),
-    attachments: z
-        .array(
-            z.object({
-                filename: z.string(),
-                path: z.string(),
-                contentType: z.string().optional(),
-            })
-        )
-        .optional(),
-});
-
-export const SendSMSSchema = z.object({
-    phone: z.string().min(10, "Valid phone number required"),
-    message: z.string().min(1, "Message is required"),
-});
-
-export const CreateReminderSchema = z.object({
-    message: z.string().min(1, "Message is required"),
-    type: ReminderTypeSchema,
-    scheduledAt: z.string().datetime("Invalid scheduled date"),
-    channel: z.enum(["whatsapp", "sms", "email"]),
-    metadata: z
-        .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
-        .optional(),
-    customerId: z.string().cuid("Invalid customer ID"),
-});
-
-export type CreateNotificationType = z.infer<typeof CreateNotificationSchema>;
-export type SendWhatsAppType = z.infer<typeof SendWhatsAppSchema>;
-export type SendEmailType = z.infer<typeof SendEmailSchema>;
-export type SendSMSType = z.infer<typeof SendSMSSchema>;
-
-import { Subjects } from "@repo/common/subjects";
+import { prisma } from "@repo/db/prisma";
 import {
-    UserCreatedEvent,
-    UserDeletedEvent,
-    UserLoggedInEvent,
-    UserUpdatedEvent,
-} from "@repo/common-backend/interfaces";
-import { KafkaPublisher } from "@repo/common-backend/kafka";
-
-const Topic = "auth-event";
-
-export class UserCreatedPublisher extends KafkaPublisher<UserCreatedEvent> {
-    subject = Subjects.UserCreated as const;
-    topic = Topic;
-    protected generateMessageKey(data: UserCreatedEvent["data"]): string {
-        return data.id;
-    }
-}
-
-export class UserLoggedInPublisher extends KafkaPublisher<UserLoggedInEvent> {
-    subject = Subjects.UserLoggedIn as const;
-    topic = Topic;
-    protected generateMessageKey(data: UserLoggedInEvent["data"]): string {
-        return data.userId;
-    }
-}
-
-export class UserUpdatedPublisher extends KafkaPublisher<UserUpdatedEvent> {
-    subject = Subjects.UserUpdated as const;
-    topic = Topic;
-
-    protected generateMessageKey(data: UserUpdatedEvent["data"]): string {
-        return data.updatedBy || data.id;
-    }
-}
-
-export class UserDeletedPublisher extends KafkaPublisher<UserDeletedEvent> {
-    subject = Subjects.UserDeleted as const;
-    topic = "auth-event";
-    protected generateMessageKey(data: UserDeletedEvent["data"]): string {
-        return data.deletedBy || data.id;
-    }
-}
+    asyncHandler,
+    comparePassword,
+    CustomError,
+    CustomResponse,
+    hashPassword,
+} from "@repo/common-backend/utils";
+import jwt from "jsonwebtoken";
+import {
+    ChangePasswordSchema,
+    ChangePasswordType,
+    LoginSchema,
+    LoginType,
+    RegisterSchema,
+    RegisterType,
+    UpdateProfileSchema,
+    UpdateProfileType,
+} from "@repo/common/schemas";
+import { logger, LogCategory } from "@repo/common-backend/logger";
+import { generateTokens } from "../helpers/authHelpers";
+import {
+    UserCreatedPublisher,
+    UserLoggedInPublisher,
+} from "../events/publishers/authPublishers";
+import { kafkaWrapper } from "@repo/common-backend/kafka";
 
 export const register = asyncHandler(async (req, res) => {
     const validatedData: RegisterType = RegisterSchema.parse(req.body);
@@ -3333,6 +2465,328 @@ export const register = asyncHandler(async (req, res) => {
     res.status(response.statusCode).json(response);
 });
 
+export const login = asyncHandler(async (req, res) => {
+    const validatedData: LoginType = LoginSchema.parse(req.body);
+
+    logger.info("User login attempt", LogCategory.AUTH, {
+        email: validatedData.email,
+        ipAddress: req.ip,
+    });
+
+    // Find user
+    const user = await prisma.user.findUnique({
+        where: { email: validatedData.email },
+    });
+
+    if (!user) {
+        logger.warn("Login failed - user not found", LogCategory.AUTH, {
+            email: validatedData.email,
+            ipAddress: req.ip,
+        });
+        throw new CustomError(401, "Invalid email or password");
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+        logger.warn("Login failed - user inactive", LogCategory.AUTH, {
+            email: validatedData.email,
+            userId: user.id,
+            ipAddress: req.ip,
+        });
+        throw new CustomError(401, "Account is deactivated");
+    }
+
+    // Check password
+    const isPasswordValid = await comparePassword(
+        validatedData.password,
+        user.password
+    );
+
+    if (!isPasswordValid) {
+        // Increment failed login attempts
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                failedLoginAttempts: { increment: 1 },
+                lastLoginIP: req.ip,
+            },
+        });
+
+        logger.warn("Login failed - invalid password", LogCategory.AUTH, {
+            email: validatedData.email,
+            userId: user.id,
+            ipAddress: req.ip,
+        });
+        throw new CustomError(401, "Invalid email or password");
+    }
+
+    // Generate tokens
+    const { accessToken, refreshToken } = await generateTokens(user);
+
+    // Create session
+    const session = await prisma.userSession.create({
+        data: {
+            userId: user.id,
+            sessionToken: accessToken,
+            refreshToken,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            deviceInfo: req.headers["user-agent"]
+                ? { userAgent: req.headers["user-agent"] as string }
+                : undefined,
+            ipAddress: req.ip,
+            userAgent: req.headers["user-agent"],
+        },
+    });
+
+    // Update user login info
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            lastLoginAt: new Date(),
+            lastLoginIP: req.ip,
+            failedLoginAttempts: 0, // Reset failed attempts
+        },
+    });
+
+    logger.logAuth("User Logged In", user.id, {
+        email: user.email,
+        sessionId: session.id,
+        ipAddress: req.ip,
+    });
+
+    // Publish user logged in event
+    const userLoggedInPublisher = new UserLoggedInPublisher(
+        kafkaWrapper.producer
+    );
+    await userLoggedInPublisher.publish({
+        userId: user.id,
+        email: user.email,
+        sessionId: session.id,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+        loginAt: new Date().toISOString(),
+    });
+
+    res.status(200)
+        .cookie("accessToken", accessToken, {
+            httpOnly: true,
+            maxAge: 15 * 60 * 1000,
+            secure: true,
+        })
+        .json(
+            new CustomResponse(200, "Login successful", {
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    phone: user.phone,
+                    role: user.role,
+                    isActive: user.isActive,
+                },
+                accessToken,
+                refreshToken,
+                expiresIn: process.env.JWT_EXPIRES_IN || "15m",
+            })
+        );
+});
+
+export const logout = asyncHandler(async (req, res) => {
+    const userId = req.user?.userId;
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.replace("Bearer ", "");
+
+    if (userId && token) {
+        // Deactivate session
+        await prisma.userSession.updateMany({
+            where: {
+                userId,
+                sessionToken: token,
+                isActive: true,
+            },
+            data: {
+                isActive: false,
+            },
+        });
+
+        logger.logAuth("User Logged Out", userId, {
+            ipAddress: req.ip,
+        });
+    }
+    const options: {
+        httpOnly: boolean;
+        maxAge: number;
+        secure: boolean;
+    } = {
+        httpOnly: true,
+        maxAge: 0,
+        secure: true,
+    };
+    res.status(200)
+        .clearCookie("accessToken", options)
+        .json(new CustomResponse(200, "Logout sucessfull"));
+});
+
+export const getProfile = asyncHandler(async (req, res) => {
+    const userId = req.user!.userId;
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            email: true,
+            name: true,
+            phone: true,
+            role: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true,
+        },
+    });
+
+    if (!user) {
+        throw new CustomError(404, "User not found");
+    }
+
+    const response = new CustomResponse(200, "Profile retrieved successfully", {
+        user,
+    });
+    res.status(response.statusCode).json(response);
+});
+
+export const updateProfile = asyncHandler(async (req, res) => {
+    const validatedData: UpdateProfileType = UpdateProfileSchema.parse(
+        req.body
+    );
+    const userId = req.user!.userId;
+
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: validatedData,
+        select: {
+            id: true,
+            email: true,
+            name: true,
+            phone: true,
+            role: true,
+            isActive: true,
+            updatedAt: true,
+        },
+    });
+
+    logger.logAuth("Profile Updated", userId, {
+        changes: validatedData,
+        ipAddress: req.ip,
+    });
+
+    const response = new CustomResponse(200, "Profile updated successfully", {
+        user: updatedUser,
+    });
+    res.status(response.statusCode).json(response);
+});
+
+export const changePassword = asyncHandler(async (req, res) => {
+    const validatedData: ChangePasswordType = ChangePasswordSchema.parse(
+        req.body
+    );
+    const userId = req.user!.userId;
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+    });
+
+    if (!user) {
+        throw new CustomError(404, "User not found");
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await comparePassword(
+        validatedData.currentPassword,
+        user.password
+    );
+
+    if (!isCurrentPasswordValid) {
+        throw new CustomError(400, "Current password is incorrect");
+    }
+
+    // Hash new password
+    const hashedNewPassword = await hashPassword(validatedData.newPassword);
+
+    // Update password
+    await prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword },
+    });
+
+    logger.logAuth("Password Changed", userId, {
+        ipAddress: req.ip,
+    });
+
+    const response = new CustomResponse(200, "Password changed successfully");
+    res.status(response.statusCode).json(response);
+});
+
+import { Subjects } from "@repo/common/subjects";
+import {
+    UserCreatedEvent,
+    UserDeletedEvent,
+    UserLoggedInEvent,
+    UserUpdatedEvent,
+} from "@repo/common-backend/interfaces";
+import { KafkaPublisher } from "@repo/common-backend/kafka";
+
+const Topic = "auth-event";
+
+export class UserCreatedPublisher extends KafkaPublisher<UserCreatedEvent> {
+    subject = Subjects.UserCreated as const;
+    topic = Topic;
+    protected generateMessageKey(data: UserCreatedEvent["data"]): string {
+        return data.id;
+    }
+}
+
+export class UserLoggedInPublisher extends KafkaPublisher<UserLoggedInEvent> {
+    subject = Subjects.UserLoggedIn as const;
+    topic = Topic;
+    protected generateMessageKey(data: UserLoggedInEvent["data"]): string {
+        return data.userId;
+    }
+}
+
+export class UserUpdatedPublisher extends KafkaPublisher<UserUpdatedEvent> {
+    subject = Subjects.UserUpdated as const;
+    topic = Topic;
+
+    protected generateMessageKey(data: UserUpdatedEvent["data"]): string {
+        return data.updatedBy || data.id;
+    }
+}
+
+export class UserDeletedPublisher extends KafkaPublisher<UserDeletedEvent> {
+    subject = Subjects.UserDeleted as const;
+    topic = "auth-event";
+    protected generateMessageKey(data: UserDeletedEvent["data"]): string {
+        return data.deletedBy || data.id;
+    }
+}
+
+import express from "express";
+import {
+    changePassword,
+    getProfile,
+    login,
+    logout,
+    register,
+    updateProfile,
+} from "../controllers/authController";
+import { authenticate } from "@repo/common-backend/middleware";
+import {
+    validateLogin,
+    validateRegister,
+    validateUpdateProfile,
+} from "@repo/common-backend/validators";
+
+const router = express.Router();
+
 router.route("/login").post(validateLogin, login);
 router.route("/register").post(validateRegister, register);
 router.route("/logout").post(authenticate, logout);
@@ -3341,133 +2795,46 @@ router
     .route("/updateProfile")
     .post(authenticate, validateUpdateProfile, updateProfile);
 router.route("/changePassword").post(authenticate, changePassword);
+
+export default router;
+
+// apps/auth/src/app.ts
+import express from "express";
+import authRoutes from "./routes/authRoutes";
+import userRoutes from "./routes/userRoutes";
+
+const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.get("/health", (req, res) => {
+    res.status(200).send("Auth Server is alive").json({
+        status: "healthy",
+        service: "auth-service",
+        timestamp: new Date().toISOString(),
+    });
+});
+
+// ==============================================
+//                   ROUTES
+// ==============================================
+
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/users", userRoutes);
+
+app.use("/api/v1/ecommerce/auth");
+
+// ==============================================
+// ==============================================
+
+app.use("*", (req, res) => {
+    res.status(404).json({
+        status: 404,
+        message: "Route not found",
+        success: false,
+    });
+});
+
+export default app;
 ```
-
-####
-
-Missing Critical Validators
-
-1. InventoryItem-Specific Validators Missing
-   Your current validateCreateInventoryItem and validateUpdateInventoryItem don't cover textile-specific fields from your schema:
-   typescript// Missing from current validators:
-
-- textileDetails (fabric, gsm, width, color, design, pattern, weaveType)
-- images array validation
-- attributes object validation
-- hsnCode format validation
-- leadTime validation
-- supplier validation
-
-2. StockMovement Validators Incomplete
-   Your validateStockMovement is too basic for your schema's MovementType enum:
-   typescript// Need validators for:
-
-- MovementType enum validation
-- Batch number validation for textiles
-- Unit price and total value validation
-- Notes and reference validation
-
-3. Missing Order and OrderItem Validators
-   Your schema has Order and OrderItem models, but validators are incomplete:
-   typescript// Missing:
-
-- OrderStatus enum validation
-- Shipping/billing address validation
-- Order payment validation
-- OrderItem validation with inventory checks
-
-4. Missing EcommerceUser Validators
-   Your schema has extensive ecommerce features but no validators:
-   typescript// Missing:
-
-- EcommerceUser registration/login
-- Address management validation
-- Social login validation
-- Preferences validation
-
-5. Notification Validators Too Generic
-   Your notification validators don't match the detailed Notification schema:
-   typescript// Missing:
-
-- NotificationType enum validation
-- NotificationChannel enum validation
-- Template data validation
-- External service validation
-  Schema Mismatches
-
-1. Payment Method Validation
-   Your payment validators don't cover all methods from your PaymentMethod enum:
-   typescript// Schema has: CASH, BANK_TRANSFER, CHEQUE, UPI, CARD, ONLINE, OTHER
-   // Validators need method-specific field validation
-2. Status Enum Validations Missing
-   Multiple status enums in your schema lack proper validation:
-   typescript- InvoiceStatus, SaleStatus, PaymentStatus
-
-- OrderStatus, OCRStatus, ReminderStatus
-- NotificationStatus, MovementType
-
-3. Ledger Validation Insufficient
-   Your ledger validators don't cover the comprehensive LedgerType enum:
-   typescript// Missing validation for:
-
-- All LedgerType enum values
-- Proper debit/credit validation
-- Reference validation for different types
-  Recommendations for Improvement
-
-1.  Create Comprehensive InventoryItem Validator
-    typescriptexport const validateCreateInventoryItem = async (req, res, next) => {
-    const schema = z.object({
-    name: z.string().min(1),
-    category: z.string().min(1),
-    textileDetails: z.object({
-    fabric: z.string().optional(),
-    gsm: z.number().min(1).optional(),
-    width: z.number().min(0.1).optional(),
-    // ... other textile fields
-    }).optional(),
-    images: z.array(z.string().url()).default([]),
-    hsnCode: z.string().regex(/^\d{4,8}$/).optional(),
-    // ... complete validation
-    });
-    };
-2.  Add Method-Specific Payment Validators
-    typescriptexport const validatePaymentByMethod = (method: PaymentMethod) => {
-    return async (req, res, next) => {
-    const baseSchema = z.object({/_ base fields _/});
-    if (method === 'CHEQUE') {
-    schema = baseSchema.extend({
-    chequeNo: z.string().min(1),
-    chequeDate: z.string().datetime(),
-    bankName: z.string().min(1)
-    });
-    }
-    // ... other methods
-    };
-    };
-3.  Add Missing Entity Validators
-    You need validators for:
-
-EcommerceUser operations
-Review creation/update
-WishlistItem management
-CartItem operations
-AuditLog creation (for system events)
-
-4. Improve Enum Validation
-   Create centralized enum validators:
-   typescriptexport const EnumValidators = {
-   PaymentMethod: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'UPI', 'CARD', 'ONLINE', 'OTHER']),
-   InvoiceStatus: z.enum(['PENDING', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED']),
-   // ... all your enums
-   };
-   Overall Assessment
-   Your current validators cover about 60-70% of your schema requirements. They're well-structured but missing:
-
-Textile-specific validation logic
-Ecommerce feature validators
-Comprehensive enum validation
-Method-specific payment validation
-Complex relationship validation
-
-The foundation is solid, but you'll need significant additions to fully cover your sophisticated textile business schema.RetryClaude can make mistakes. Please double-check responses.
