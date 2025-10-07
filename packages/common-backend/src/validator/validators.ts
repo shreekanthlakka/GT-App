@@ -38,6 +38,13 @@ import {
     UpdateSaleReceiptSchema,
     DeleteSaleReceiptSchema,
     MarkChequeClearanceSchema,
+    AdjustStockSchema,
+    ReduceStockSchema,
+    AddStockSchema,
+    LookupSchema,
+    POSSearchSchema,
+    StockMovementHistorySchema,
+    LowStockQuerySchema,
 } from "@repo/common/schemas";
 
 // Extend Request interface to include parsed data
@@ -911,6 +918,183 @@ export const validateStockMovement = async (
             throw new CustomError(
                 400,
                 "Stock movement validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+/**
+ * Validate add stock request
+ */
+export const validateAddStock = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedBody = await AddStockSchema.parseAsync(req.body);
+        req.body = req.parsedBody;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Add stock validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+/**
+ * Validate reduce stock request
+ */
+export const validateReduceStock = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedBody = await ReduceStockSchema.parseAsync(req.body);
+        req.body = req.parsedBody;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Reduce stock validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+/**
+ * Validate adjust stock request
+ */
+export const validateAdjustStock = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedBody = await AdjustStockSchema.parseAsync(req.body);
+        req.body = req.parsedBody;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Adjust stock validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+/**
+ * Validate POS search query
+ */
+export const validatePOSSearch = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedQuery = await POSSearchSchema.parseAsync(req.query);
+        req.query = req.parsedQuery as any;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Search validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+/**
+ * Validate lookup query
+ */
+export const validateLookup = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedQuery = await LookupSchema.parseAsync(req.query);
+        req.query = req.parsedQuery as any;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Lookup validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+/**
+ * Validate low stock query
+ */
+export const validateLowStockQuery = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedQuery = await LowStockQuerySchema.parseAsync(req.query);
+        req.query = req.parsedQuery as any;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Low stock query validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+/**
+ * Validate stock movement history query
+ */
+export const validateStockMovementHistory = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedQuery = await StockMovementHistorySchema.parseAsync(
+            req.query
+        );
+        req.query = req.parsedQuery as any;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Stock movement history query validation failed",
                 errors as any
             );
         }

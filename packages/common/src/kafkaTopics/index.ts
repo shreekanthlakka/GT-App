@@ -36,4 +36,11 @@ export const TopicNames = {
 
     // customer
     CUSTOMER_EVENTS: "customer.events",
+
+    // inventory
+    INVENTORY_ITEM: "inventory.item",
+
+    STOCK_MOVEMENT: "stock.movement",
+
+    INVENTORY_ANALYTICS: "inventory.analytics",
 };

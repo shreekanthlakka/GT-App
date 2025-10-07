@@ -82,6 +82,86 @@ export const StockMovementSchema = z.object({
     notes: z.string().optional(),
 });
 
+/**
+ * Schema for adding stock
+ */
+export const AddStockSchema = z.object({
+    quantity: z.number().int().positive("Quantity must be a positive integer"),
+    reason: z.string().optional(),
+    reference: z.string().optional(),
+    batchNumber: z.string().optional(),
+    unitPrice: z.number().positive("Unit price must be positive").optional(),
+});
+
+/**
+ * Schema for reducing stock
+ */
+export const ReduceStockSchema = z.object({
+    quantity: z.number().int().positive("Quantity must be a positive integer"),
+    reason: z.string().min(1, "Reason is required for stock reduction"),
+    reference: z.string().optional(),
+});
+
+/**
+ * Schema for adjusting stock
+ */
+export const AdjustStockSchema = z.object({
+    newStock: z.number().int().min(0, "New stock cannot be negative"),
+    reason: z.string().min(1, "Reason is required for stock adjustment"),
+    notes: z.string().optional(),
+});
+
+/**
+ * Schema for POS search
+ */
+export const POSSearchSchema = z.object({
+    q: z.string().min(2, "Search query must be at least 2 characters"),
+    limit: z.coerce.number().int().positive().max(50).default(10),
+});
+
+/**
+ * Schema for SKU/Barcode lookup
+ */
+export const LookupSchema = z
+    .object({
+        sku: z.string().optional(),
+        barcode: z.string().optional(),
+    })
+    .refine((data) => data.sku || data.barcode, {
+        message: "Either SKU or Barcode must be provided",
+    });
+
+/**
+ * Schema for low stock query
+ */
+export const LowStockQuerySchema = z.object({
+    category: z.string().optional(),
+    level: z.enum(["low", "critical", "all"]).default("all"),
+});
+
+/**
+ * Schema for stock movement history query
+ */
+export const StockMovementHistorySchema = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(20),
+    itemId: z.string().cuid("Invalid item ID").optional(),
+    type: z
+        .enum([
+            "IN",
+            "OUT",
+            "ADJUSTMENT",
+            "TRANSFER",
+            "RETURN",
+            "DAMAGE",
+            "SAMPLE",
+            "WASTAGE",
+        ])
+        .optional(),
+    startDate: z.string().datetime().optional(),
+    endDate: z.string().datetime().optional(),
+});
+
 export type CreateInventoryItemType = z.infer<typeof CreateInventoryItemSchema>;
 export type UpdateInventoryItemType = z.infer<typeof UpdateInventoryItemSchema>;
 export type InventoryItemQueryType = z.infer<typeof InventoryItemQuerySchema>;

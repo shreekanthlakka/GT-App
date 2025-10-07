@@ -935,6 +935,7 @@ export interface InventoryItemUpdatedEvent extends BaseEvent {
     subject: Subjects.InventoryItemUpdated;
     data: {
         id: string;
+        name?: string;
         updatedAt: string;
         changes: Record<
             string,
