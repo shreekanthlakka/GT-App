@@ -901,8 +901,8 @@ export interface InventoryItemCreatedEvent extends BaseEvent {
         };
 
         // Product attributes
-        images: string[]; // Array of image URLs
-        attributes: Record<string, any>; // Flexible product attributes
+        images?: string[]; // Array of image URLs
+        attributes?: Record<string, any>; // Flexible product attributes
 
         // Tax and compliance
         hsnCode?: string;
@@ -915,10 +915,12 @@ export interface InventoryItemCreatedEvent extends BaseEvent {
         lastPurchaseDate?: string;
         lastPurchasePrice?: number;
 
-        isActive: boolean;
+        isActive?: boolean;
         userId: string;
         createdBy: string;
         createdAt: string;
+        autoCreatedFromOCR?: boolean;
+        ocrJobId?: string;
 
         // Initial stock entry details
         initialStockEntry?: {

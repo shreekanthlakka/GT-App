@@ -19,6 +19,8 @@ import {
     ProviderEmailResult,
     ProviderSMSResult,
     ProviderWhatsAppResult,
+    SendInAppNotificationRequestEvent,
+    InAppNotificationResult,
 } from "@repo/common-backend/interfaces";
 import { logger, LogCategory } from "@repo/common-backend/logger";
 
@@ -451,6 +453,112 @@ export class NotificationService {
                 errorMessage,
                 errorCode,
                 templateStatus: (error as any)?.templateStatus,
+            };
+        }
+    }
+
+    /**
+     * Send in-app notification (synchronous - saves to DB)
+     * FIXED: Uses actual Notification model fields (no metadata)
+     */
+    async sendInAppNotification(
+        data: SendInAppNotificationRequestEvent["data"]
+    ): Promise<InAppNotificationResult> {
+        try {
+            logger.info(
+                "Creating in-app notification",
+                LogCategory.NOTIFICATION,
+                {
+                    eventId: data.eventId,
+                    recipientId: data.recipientId,
+                    title: data.notification.title,
+                }
+            );
+
+            // Create notification in database (using actual schema fields)
+            const notification = await prisma.notification.create({
+                data: {
+                    title: data.notification.title,
+                    message: data.notification.message,
+                    type: this.mapNotificationType(
+                        data.notification.type || data.metadata.sourceEntity
+                    ),
+                    channel: "IN_APP" as any,
+                    recipientType: data.recipientType,
+                    recipientId: data.recipientId,
+                    recipientName: data.recipient.name,
+                    recipientContact: data.recipient.email,
+                    userId: data.userId,
+                    status: "SENT" as any,
+                    sentAt: new Date(),
+
+                    // Store extra data in templateData field (it's a Json field)
+                    templateData: {
+                        deepLink: data.notification.deepLink,
+                        priority: data.notification.priority,
+                        imageUrl: data.notification.imageUrl,
+                        sourceService: data.metadata.sourceService,
+                        sourceEntity: data.metadata.sourceEntity,
+                        sourceEntityId: data.metadata.sourceEntityId,
+                    },
+
+                    // Map source entity relationships based on entity type
+                    ...(data.metadata.sourceEntity === "Invoice" && {
+                        invoiceId: data.metadata.sourceEntityId,
+                    }),
+                    ...(data.metadata.sourceEntity === "invoice" && {
+                        invoiceId: data.metadata.sourceEntityId,
+                    }),
+                    ...(data.metadata.sourceEntity === "Sale" && {
+                        saleId: data.metadata.sourceEntityId,
+                    }),
+                    ...(data.metadata.sourceEntity === "InvoicePayment" && {
+                        invoicePaymentId: data.metadata.sourceEntityId,
+                    }),
+                    ...(data.metadata.sourceEntity === "invoice_payment" && {
+                        invoicePaymentId: data.metadata.sourceEntityId,
+                    }),
+                    ...(data.metadata.sourceEntity === "SaleReceipt" && {
+                        saleReceiptId: data.metadata.sourceEntityId,
+                    }),
+                    ...(data.metadata.sourceEntity === "sale_receipt" && {
+                        saleReceiptId: data.metadata.sourceEntityId,
+                    }),
+                },
+            });
+
+            logger.info(
+                "In-app notification created successfully",
+                LogCategory.NOTIFICATION,
+                {
+                    notificationId: notification.id,
+                    eventId: data.eventId,
+                    recipientId: data.recipientId,
+                }
+            );
+
+            return {
+                success: true,
+                notificationId: notification.id,
+                createdAt: notification.createdAt,
+            };
+        } catch (error: any) {
+            logger.error(
+                "Failed to create in-app notification",
+                undefined,
+                LogCategory.NOTIFICATION,
+                {
+                    eventId: data.eventId,
+                    recipientId: data.recipientId,
+                    error: error.message,
+                    stack: error.stack,
+                }
+            );
+
+            return {
+                success: false,
+                errorMessage: error.message,
+                errorCode: "INAPP_NOTIFICATION_FAILED",
             };
         }
     }

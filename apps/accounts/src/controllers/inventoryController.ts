@@ -14,7 +14,7 @@ import {
     StockAddedPublisher,
     StockReducedPublisher,
     StockAdjustedPublisher,
-    StockLowPublisher,
+    LowStockAlertPublisher,
     StockCriticalPublisher,
     StockOutPublisher,
     shouldTriggerStockAlert,

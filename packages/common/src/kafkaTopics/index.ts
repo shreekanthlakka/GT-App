@@ -17,6 +17,7 @@ export const TopicNames = {
     ACCOUNTS_INVOICE_EVENTS: "accounts.invoice.events",
     ACCOUNTS_INVOICE_PAYMENT_EVENTS: "accounts.invoice.payment.events",
     ACCOUNTS_SALE_EVENTS: "accounts.sale.events",
+    ACCOUNTS_SALE_RECEIPT_EVENTS: "accounts.sale.receipt.events",
     ACCOUNTS_LEDGER_EVENTS: "accounts.ledger.events",
 
     // OCR DOMAIN
@@ -43,4 +44,10 @@ export const TopicNames = {
     STOCK_MOVEMENT: "stock.movement",
 
     INVENTORY_ANALYTICS: "inventory.analytics",
+
+    OCR_EVENTS: "ocr.events",
+
+    SALE_EVENTS: "sale.events",
+
+    NOTIFICATION_INAPP_REQUESTS: "notification.inapp.requests",
 };

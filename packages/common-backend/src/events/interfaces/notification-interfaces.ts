@@ -534,3 +534,42 @@ export interface ProviderWhatsAppResult {
     errorMessage?: string;
     errorCode?: string;
 }
+
+// In-App Notification Request (what services publish)
+export interface SendInAppNotificationRequestEvent extends BaseEvent {
+    subject: Subjects.SendInAppNotificationRequested;
+    data: {
+        eventId: string;
+        recipientType: "CUSTOMER" | "PARTY" | "USER" | "INAPP";
+        recipientId: string;
+        recipient: {
+            name: string;
+            email?: string;
+        };
+        notification: {
+            title: string;
+            message: string;
+            type?: string;
+            priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+            deepLink?: string;
+            imageUrl?: string;
+        };
+        metadata: {
+            sourceService: string;
+            sourceEntity: string;
+            sourceEntityId: string;
+            priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+        };
+        userId: string;
+        timestamp: string;
+    };
+}
+
+// In-App Notification Result
+export interface InAppNotificationResult {
+    success: boolean;
+    notificationId?: string;
+    createdAt?: Date;
+    errorMessage?: string;
+    errorCode?: string;
+}

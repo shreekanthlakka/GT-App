@@ -7,6 +7,29 @@ import { Subjects } from "@repo/common/subjects";
 // INVOICE LIFECYCLE EVENTS
 // ========================================
 
+// ========================================
+// INVOICE ITEM TYPE
+// ========================================
+export interface InvoiceItemData {
+    name: string;
+    description?: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    totalPrice: number;
+    hsnCode?: string;
+    taxRate?: number;
+    taxAmount?: number;
+    discountAmount?: number;
+    inventoryItemId?: string;
+    sku?: string;
+    barcode?: string;
+}
+
+// ========================================
+// INVOICE LIFECYCLE EVENTS
+// ========================================
+
 export interface InvoiceCreatedEvent extends BaseEvent {
     subject: Subjects.InvoiceCreated;
     data: {
@@ -16,7 +39,7 @@ export interface InvoiceCreatedEvent extends BaseEvent {
         date: string;
         dueDate?: string;
         amount: number;
-        paidAmount: number;
+        paidAmount?: number;
         remainingAmount?: number;
         status: "PENDING" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "CANCELLED";
         description?: string | null;
@@ -24,9 +47,18 @@ export interface InvoiceCreatedEvent extends BaseEvent {
         discountAmount?: number;
         roundOffAmount?: number;
         notes?: string | null;
+
+        // Party information
         partyId: string;
         partyName: string;
         partyGSTNo?: string | null;
+
+        // ✨ NEW: Invoice items array
+        items?: InvoiceItemData[];
+        itemCount?: number;
+        totalQuantity?: number;
+
+        // Transport and delivery details
         poNumber?: string | null;
         transportMode?: string | null;
         vehicleNo?: string | null;
@@ -36,9 +68,16 @@ export interface InvoiceCreatedEvent extends BaseEvent {
         buyersOrderNo?: string | null;
         dispatchedThrough?: string | null;
         destination?: string | null;
+
+        // Metadata
         createdBy: string;
         createdAt: string;
         userId: string;
+
+        // ✨ NEW: OCR-related fields
+        autoCreatedFromOCR?: boolean;
+        ocrJobId?: string;
+        ocrConfidence?: number;
     };
 }
 

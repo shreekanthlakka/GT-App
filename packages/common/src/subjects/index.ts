@@ -213,6 +213,7 @@ export enum Subjects {
     SendEmailRequested = "notification:send-email-requested",
     SendSMSRequested = "notification:send-sms-requested",
     SendWhatsAppRequested = "notification:send-whatsapp-requested",
+    SendInAppNotificationRequested = "notification:inapp:send:requested",
 
     // Communication Channels
     WhatsAppMessageSent = "whatsapp:message-sent",
@@ -230,6 +231,11 @@ export enum Subjects {
     EmailClicked = "email:clicked",
     EmailBounced = "email:bounced",
     EmailFailed = "email:failed",
+
+    InAppNotificationSent = "notification:inapp:sent",
+    InAppNotificationFailed = "notification:inapp:failed",
+    InAppNotificationRead = "notification:inapp:read",
+    InAppNotificationClicked = "notification:inapp:clicked",
 
     // ========================================
     // 📄 OCR & DOCUMENT PROCESSING

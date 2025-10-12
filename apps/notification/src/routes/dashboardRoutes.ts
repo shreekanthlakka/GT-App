@@ -1,13 +1,3 @@
-// import express from "express";
-// import { getDashboardStats } from "../controllers/dashboardController";
-// import { authenticate } from "@repo/common-backend/middleware";
-
-// const router = express.Router();
-
-// router.get("/stats", authenticate, getDashboardStats);
-
-// export default router;
-
 // notification-service/src/routes/dashboardRoutes.ts
 import express from "express";
 import {
