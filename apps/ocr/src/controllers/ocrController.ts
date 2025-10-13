@@ -1,5 +1,5 @@
 // apps/ocr/src/controllers/ocrController.ts - ENHANCED VERSION
-import { prisma } from "@repo/db/prisma";
+import { prisma, OCRStatus } from "@repo/db/prisma";
 import {
     asyncHandler,
     CustomError,
@@ -15,7 +15,6 @@ import {
 import { kafkaWrapper } from "@repo/common-backend/kafka";
 import { OCRService } from "../services/ocrService";
 import { FileUploadService } from "../services/fileUploadService";
-import { OCRStatus } from "@prisma/client";
 
 export const uploadDocument = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -59,6 +58,7 @@ export const uploadDocument = asyncHandler(async (req, res) => {
                 status: OCRStatus.PROCESSING,
                 extractedData: {},
                 userId,
+                documentType,
             },
         });
 
@@ -74,6 +74,10 @@ export const uploadDocument = asyncHandler(async (req, res) => {
             fileName: req.file.originalname,
             fileSize: req.file.size,
             startedAt: new Date().toISOString(),
+            ocrEngine:
+                process.env.USE_GOOGLE_VISION === "true"
+                    ? "GOOGLE_VISION"
+                    : "TESSERACT",
         });
 
         // Process OCR asynchronously with all enhanced features

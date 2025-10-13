@@ -1,4 +1,4 @@
-import { PrismaClient, NotificationType } from "./generated/prisma";
+import { PrismaClient, NotificationType, OCRStatus } from "./generated/prisma";
 
 const globalForPrisma = globalThis as unknown as {
     prisma: PrismaClient | undefined;
@@ -12,4 +12,4 @@ export const prisma =
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-export { NotificationType };
+export { NotificationType, OCRStatus };

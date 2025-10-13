@@ -910,7 +910,8 @@ model OCRData {
   confidence    Float?
   status        OCRStatus @default(PROCESSING)
   errorMessage  String?   // Error details if failed
-  
+  documentType  String?
+
   // Relations (nullable - one OCR can be linked to any document)
   invoiceId     String?   @unique
   invoice       Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)

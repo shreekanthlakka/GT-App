@@ -212,8 +212,11 @@ export interface OCRJobStartedEvent extends BaseEvent {
         jobId: string;
         startedAt: string;
         imageUrl: string;
-        ocrEngine: "TESSERACT" | "GOOGLE_VISION" | "AWS_TEXTRACT";
+        ocrEngine?: "TESSERACT" | "GOOGLE_VISION" | "AWS_TEXTRACT";
         userId: string;
+        fileName?: string;
+        fileSize?: number;
+        documentType?: string;
     };
 }
 
