@@ -239,7 +239,11 @@ export interface OCRJobFailedEvent extends BaseEvent {
         jobId: string;
         failedAt: string;
         errorMessage: string;
-        errorType: "IMAGE_QUALITY" | "OCR_ENGINE_ERROR" | "TIMEOUT" | "UNKNOWN";
+        errorType?:
+            | "IMAGE_QUALITY"
+            | "OCR_ENGINE_ERROR"
+            | "TIMEOUT"
+            | "UNKNOWN";
         retryable: boolean;
         retryCount?: number;
         userId: string;
