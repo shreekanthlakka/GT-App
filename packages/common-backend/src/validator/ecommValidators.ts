@@ -3,7 +3,11 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodError, z } from "zod";
 import { CustomError } from "../utils/index";
-import { EcommerceSchemas } from "@repo/common/ecommSchemas";
+import {
+    EcommerceSchemas,
+    PreferencesSchema,
+    UpdateEcommerceUserSchema,
+} from "@repo/common/ecommSchemas";
 
 // Extend Request interface for ecommerce parsed data
 declare global {
@@ -1062,6 +1066,50 @@ export const validateNotificationPreferences = async (
             throw new CustomError(
                 400,
                 "Notification preferences validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validateUpdateProfile = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const parsed = await UpdateEcommerceUserSchema.parseAsync(req.body);
+        req.body = parsed;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Profile update validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validatePreferences = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const parsed = await PreferencesSchema.parseAsync(req.body);
+        req.body = parsed;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Preferences validation failed",
                 errors as any
             );
         }

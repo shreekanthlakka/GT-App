@@ -32,6 +32,7 @@ export enum LogCategory {
     API = "API",
     BUSINESS = "BUSINESS",
     ACCOUNTS = "ACCOUNTS",
+    ECOMMERCE = "ECOMMERCE",
 }
 
 // Log context interface

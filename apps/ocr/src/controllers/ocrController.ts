@@ -271,6 +271,7 @@ export const reviewOCRData = asyncHandler(async (req, res) => {
     if (!userId) {
         throw new CustomError(401, "Unauthorized");
     }
+    if (!id) return;
 
     const ocrData = await prisma.oCRData.findFirst({
         where: { id, userId },
@@ -351,6 +352,7 @@ export const approveOCRData = asyncHandler(async (req, res) => {
     if (!userId) {
         throw new CustomError(401, "Unauthorized");
     }
+    if (!id) return;
 
     const ocrData = await prisma.oCRData.findFirst({
         where: { id, userId },
@@ -541,7 +543,7 @@ export const retryOCRProcessing = asyncHandler(async (req, res) => {
             });
         })
         .catch((error) => {
-            logger.error("OCR retry failed", LogCategory.OCR, {
+            logger.error("OCR retry failed", undefined, LogCategory.OCR, {
                 ocrId: id,
                 error: error.message,
             });

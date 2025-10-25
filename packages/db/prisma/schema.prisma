@@ -94,11 +94,9 @@ model EcommerceUser {
   
   // Profile information
   dateOfBirth DateTime?
-  gender      String?  // MALE, FEMALE, OTHER
+  gender      Gender?  // MALE, FEMALE, OTHER
   avatar      String?  // Profile picture URL
   
-  // Address information
-  addresses   Json     @default("[]") // [{type: 'home|office', name, phone, address, city, state, pincode, isDefault}]
   
   // Authentication & Security
   emailVerified     Boolean   @default(false)
@@ -139,6 +137,7 @@ model EcommerceUser {
   reviews           Review[]
   wishlistItems     WishlistItem[]
   cartItems         CartItem[]
+  address           Address[]
 
   @@index([email])
   @@index([phone])
@@ -146,6 +145,35 @@ model EcommerceUser {
   @@index([isActive])
   @@map("ecommerce_users")
 }
+
+// Address Management
+model Address {
+  id                String    @id @default(cuid())
+  ecommerceUserId            String
+  user              EcommerceUser @relation(fields: [ecommerceUserId], references: [id], onDelete: Cascade)
+  
+  type              AddressType
+  name              String
+  phone             String
+  address           String
+  city              String
+  state             String
+  pincode           String
+  landmark          String?
+  instructions      String?
+  isDefault         Boolean   @default(false)
+  
+  // Relations
+  ordersShipping    Order[]   @relation("ShippingAddress")
+  ordersBilling     Order[]   @relation("BillingAddress")
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([ecommerceUserId])
+  @@map("addresses")
+}
+
 
 model EcommerceUserSession {
   id           String   @id @default(cuid())
@@ -580,6 +608,10 @@ model Review {
   comment   String?
   images    Json     @default("[]") // Array of image URLs
   
+  helpfulVotes      Int       @default(0)
+  
+  shopResponse      String?
+  shopResponseAt    DateTime?
   // Status
   isVerified Boolean @default(false) // Verified purchase review
   isApproved Boolean @default(false) // Admin approved
@@ -630,6 +662,8 @@ model CartItem {
   ecommerceUserId String
   ecommerceUser   EcommerceUser @relation(fields: [ecommerceUserId], references: [id], onDelete: Cascade)
   
+  price             Decimal   @db.Decimal(10, 2)
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -649,16 +683,24 @@ model Order {
   taxAmount      Decimal     @default(0) @db.Decimal(12, 2)
   discountAmount Decimal     @default(0) @db.Decimal(12, 2)
   
-  shippingAddress Json?      // {name, phone, address, city, state, pincode}
-  billingAddress  Json?
   notes          String?
   
   // Additional fields
-  source         String?     // ONLINE, PHONE, WALK_IN, ECOMMERCE
-  priority       String?     // HIGH, NORMAL, LOW
-  expectedDelivery DateTime?
-  actualDelivery   DateTime?
-  trackingNumber   String?
+  source            String?     // ONLINE, PHONE, WALK_IN, ECOMMERCE
+  priority          String?     // HIGH, NORMAL, LOW
+  expectedDelivery  DateTime?
+  actualDelivery    DateTime?
+  trackingNumber    String?
+
+  // Delivery
+  courierService    String?
+  deliveredAt       DateTime?
+
+  giftMessage       String?
+  deliveryInstructions String?
+  couponCode        String?
+  // Staff (if order processed by shop staff)
+  processedBy       String?
   
   // Relations - Can be either internal customer or ecommerce user
   customerId      String?
@@ -670,6 +712,13 @@ model Order {
   userId         String
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  shippingAddressId String
+  shippingAddress   Address   @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  
+  billingAddressId  String?
+  billingAddress    Address?  @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  
+
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -707,6 +756,8 @@ model OrderItem {
   @@index([inventoryItemId])
   @@map("order_items")
 }
+
+
 
 model OrderPayment {
   id               String        @id @default(cuid())
@@ -1191,4 +1242,23 @@ enum MovementType {
   DAMAGE      // Damaged goods writeoff
   SAMPLE      // Sample given to customer
   WASTAGE     // Production wastage
+}
+
+enum AddressType {
+  HOME
+  OFFICE
+  OTHER
+}
+
+enum SignupSource {
+  WEBSITE
+  MOBILE_APP
+  SOCIAL
+  REFERRAL
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
 }

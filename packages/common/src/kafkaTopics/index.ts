@@ -50,4 +50,9 @@ export const TopicNames = {
     SALE_EVENTS: "sale.events",
 
     NOTIFICATION_INAPP_REQUESTS: "notification.inapp.requests",
+
+    ECOMMERCE_USER_EVENTS: "ecomm.user.events",
+    ECOMMERCE_ORDER_EVENTS: "ecomm.order.events",
+    ECOMMERCE_CART_EVENTS: "ecomm.cart.events",
+    ECOMMERCE_REVIEW_EVENTS: "ecomm.review.events",
 };

@@ -290,7 +290,7 @@ export interface EcommerceUserUnblockedEvent extends BaseEvent {
 export interface EcommerceUserLoggedInEvent extends BaseEvent {
     subject: Subjects.EcommerceUserLoggedIn;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         email: string;
         name: string;
 
@@ -345,7 +345,7 @@ export interface EcommerceUserLoggedInEvent extends BaseEvent {
 export interface EcommerceUserLoggedOutEvent extends BaseEvent {
     subject: Subjects.EcommerceUserLoggedOut;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         sessionId: string;
 
         // Logout details
@@ -445,7 +445,7 @@ export interface EcommerceUserLoginFailedEvent extends BaseEvent {
 export interface EcommerceUserEmailVerifiedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserEmailVerified;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         email: string;
         verifiedAt: string;
 
@@ -476,7 +476,7 @@ export interface EcommerceUserEmailVerifiedEvent extends BaseEvent {
 export interface EcommerceUserPhoneVerifiedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserPhoneVerified;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         phone: string;
         verifiedAt: string;
 
@@ -513,7 +513,7 @@ export interface EcommerceUserPhoneVerifiedEvent extends BaseEvent {
 export interface EcommerceUserEmailVerificationSentEvent extends BaseEvent {
     subject: Subjects.EcommerceUserEmailVerificationSent;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         email: string;
         sentAt: string;
 
@@ -544,7 +544,7 @@ export interface EcommerceUserEmailVerificationSentEvent extends BaseEvent {
 export interface EcommerceUserPhoneVerificationSentEvent extends BaseEvent {
     subject: Subjects.EcommerceUserPhoneVerificationSent;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         phone: string;
         sentAt: string;
 
@@ -576,7 +576,7 @@ export interface EcommerceUserPhoneVerificationSentEvent extends BaseEvent {
 export interface EcommerceUserProfileUpdatedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserProfileUpdated;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         email: string;
         updatedAt: string;
 
@@ -606,7 +606,7 @@ export interface EcommerceUserProfileUpdatedEvent extends BaseEvent {
 export interface EcommerceUserAddressAddedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserAddressAdded;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         addressId: string;
 
         // Address details
@@ -646,7 +646,7 @@ export interface EcommerceUserAddressAddedEvent extends BaseEvent {
 export interface EcommerceUserAddressUpdatedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserAddressUpdated;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         addressId: string;
         updatedAt: string;
 
@@ -672,7 +672,7 @@ export interface EcommerceUserAddressUpdatedEvent extends BaseEvent {
 export interface EcommerceUserAddressDeletedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserAddressDeleted;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         addressId: string;
         deletedAt: string;
 
@@ -699,7 +699,7 @@ export interface EcommerceUserAddressDeletedEvent extends BaseEvent {
 export interface EcommerceUserPreferencesUpdatedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserPreferencesUpdated;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         updatedAt: string;
 
         // Preference changes
@@ -748,7 +748,7 @@ export interface EcommerceUserPreferencesUpdatedEvent extends BaseEvent {
 export interface EcommerceUserSocialLoginLinkedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserSocialLoginLinked;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         provider: "GOOGLE" | "FACEBOOK" | "APPLE";
         providerId: string;
         providerEmail?: string;
@@ -775,7 +775,7 @@ export interface EcommerceUserSocialLoginLinkedEvent extends BaseEvent {
 export interface EcommerceUserSocialLoginUnlinkedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserSocialLoginUnlinked;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         provider: "GOOGLE" | "FACEBOOK" | "APPLE";
         providerId: string;
 
@@ -807,7 +807,7 @@ export interface EcommerceUserSocialLoginUnlinkedEvent extends BaseEvent {
 export interface EcommerceUserSessionCreatedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserSessionCreated;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         sessionId: string;
         sessionToken: string; // Usually masked
 
@@ -849,7 +849,7 @@ export interface EcommerceUserSessionCreatedEvent extends BaseEvent {
 export interface EcommerceUserSessionExpiredEvent extends BaseEvent {
     subject: Subjects.EcommerceUserSessionExpired;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         sessionId: string;
         expiredAt: string;
 
@@ -889,7 +889,7 @@ export interface EcommerceUserSessionExpiredEvent extends BaseEvent {
 export interface EcommerceUserSessionTerminatedEvent extends BaseEvent {
     subject: Subjects.EcommerceUserSessionTerminated;
     data: {
-        userId: string;
+        ecommerceUserId: string;
         sessionId: string;
         terminatedAt: string;
 
