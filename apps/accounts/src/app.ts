@@ -1,4 +1,12 @@
 import express from "express";
+import customerRoutes from "./routes/customerRoutes";
+import inventoryRoutes from "./routes/inventoryRoutes";
+import invoiceRoutes from "./routes/invoiceRoutes";
+import invoicePaymentRoutes from "./routes/invoicePaymentRoutes";
+import partyRoutes from "./routes/partyRoutes";
+import saleRoutes from "./routes/saleRoutes";
+import saleReciptRoutes from "./routes/saleReceiptRoutes";
+import financialReportRoutes from "./routes/financialReportsRoutes";
 
 const app = express();
 app.use(express.json());
@@ -15,6 +23,15 @@ app.get("/health", (req, res) => {
 // ==============================================
 //                   ROUTES
 // ==============================================
+
+app.use("/api/v1/customers", customerRoutes);
+app.use("/api/v1/parties", partyRoutes);
+app.use("/api/v1/invoices", invoiceRoutes);
+app.use("/api/v1/invoice-payments", invoicePaymentRoutes);
+app.use("/api/v1/inventories", inventoryRoutes);
+app.use("/api/v1/sales", saleRoutes);
+app.use("/api/v1/sale-receipts", saleReciptRoutes);
+app.use("/api/v1/financial-reports", financialReportRoutes);
 
 app.use("*", (req, res) => {
     res.status(404).json({

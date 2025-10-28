@@ -11,7 +11,8 @@
         "./middleware": "./src/middleware/index.ts",
         "./validators": "./src/validator/validators.ts",
         "./ecommValidators": "./src/validator/ecommValidators.ts",
-        "./publisher": "./src/events/publishers/index.ts"
+        "./publisher": "./src/events/publishers/index.ts",
+        "./financialValidators": "./src/validator/financialReportsValidators.ts"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
