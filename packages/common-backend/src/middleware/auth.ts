@@ -69,3 +69,11 @@ export const authorize = (roles: string[]) => {
         next();
     };
 };
+
+export const authorizeOwner = () => authorize(["OWNER"]);
+export const authorizeManager = () => authorize(["MANAGER"]);
+export const authorizeViewer = () => authorize(["VIEWER"]);
+export const authorizeToManager = () => authorize(["OWNER", "MANAGER"]);
+export const authorizeStaff = () => authorize(["STAFF"]);
+export const authorizeAll = () =>
+    authorize(["OWNER", "MANAGER", "VIEWER", "STAFF", "ACCOUNTANT"]);

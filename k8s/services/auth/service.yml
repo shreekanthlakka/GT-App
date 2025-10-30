@@ -1,0 +1,17 @@
+# k8s/services/auth/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: gt-app
+  labels:
+    app: auth-service
+spec:
+  selector:
+    app: auth-service
+  ports:
+  - name: http
+    port: 3002
+    targetPort: 3002
+    protocol: TCP
+  type: ClusterIP

@@ -1,0 +1,7 @@
+# k8s/infrastructure/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gt-app
+  labels:
+    name: gt-app

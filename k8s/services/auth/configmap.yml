@@ -1,0 +1,14 @@
+# k8s/services/auth/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-config
+  namespace: gt-app
+data:
+  NODE_ENV: "production"
+  PORT: "3002"
+  KAFKA_BROKERS: "kafka:9092"
+  KAFKA_CLIENT_ID: "auth-service"
+  KAFKA_CONSUMER_GROUP: "auth-group"
+  JWT_EXPIRATION: "24h"
+  REFRESH_TOKEN_EXPIRATION: "7d"

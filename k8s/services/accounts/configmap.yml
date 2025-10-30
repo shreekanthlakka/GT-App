@@ -1,0 +1,12 @@
+# k8s/services/accounts/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: accounts-config
+  namespace: gt-app
+data:
+  NODE_ENV: "production"
+  PORT: "3001"
+  KAFKA_BROKERS: "kafka:9092"
+  KAFKA_CLIENT_ID: "accounts-service"
+  KAFKA_CONSUMER_GROUP: "accounts-group"

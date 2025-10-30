@@ -1,7 +1,7 @@
 // apps/accounts/src/routes/financialReportsRoutes.ts
 
 import express from "express";
-import { authenticate } from "@repo/common-backend/middleware";
+import { authenticate, authorizeOwner } from "@repo/common-backend/middleware";
 import {
     validateDateRange,
     validateAsOfDate,
@@ -51,6 +51,7 @@ router.get(
 router.get(
     "/balance-sheet",
     authenticate,
+    authorizeOwner,
     validateAsOfDate,
     financialReportsController.getBalanceSheet
 );

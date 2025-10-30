@@ -1,0 +1,65 @@
+# k8s/services/ocr/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocr-service
+  namespace: gt-app
+  labels:
+    app: ocr-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ocr-service
+  template:
+    metadata:
+      labels:
+        app: ocr-service
+    spec:
+      containers:
+      - name: ocr
+        image: your-registry/gt-app-ocr:latest # Update with your image registry
+        ports:
+        - containerPort: 3003
+        envFrom:
+        - configMapRef:
+            name: ocr-config
+        - secretRef:
+            name: ocr-secret
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3003
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "300m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: temp-storage
+          mountPath: /tmp/uploads
+      volumes:
+      - name: temp-storage
+        emptyDir:
+          sizeLimit: 1Gi
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.35
+        command: [ 'sh', '-c', 'until nc -z postgres 5432; do echo waiting for postgres; sleep 2; done;' ]
+      - name: wait-for-kafka
+        image: busybox:1.35
+        command: [ 'sh', '-c', 'until nc -z kafka 9092; do echo waiting for kafka; sleep 2; done;' ]

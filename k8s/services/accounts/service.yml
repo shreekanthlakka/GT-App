@@ -1,0 +1,17 @@
+# k8s/services/accounts/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: accounts-service
+  namespace: gt-app
+  labels:
+    app: accounts-service
+spec:
+  selector:
+    app: accounts-service
+  ports:
+  - name: http
+    port: 3001
+    targetPort: 3001
+    protocol: TCP
+  type: ClusterIP

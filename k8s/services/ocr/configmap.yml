@@ -1,0 +1,14 @@
+# k8s/services/ocr/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ocr-config
+  namespace: gt-app
+data:
+  NODE_ENV: "production"
+  PORT: "3003"
+  KAFKA_BROKERS: "kafka:9092"
+  KAFKA_CLIENT_ID: "ocr-service"
+  KAFKA_CONSUMER_GROUP: "ocr-group"
+  MAX_FILE_SIZE: "10485760" # 10MB
+  ALLOWED_FILE_TYPES: "image/jpeg,image/png,image/jpg,application/pdf"

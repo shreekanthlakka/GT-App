@@ -1,0 +1,58 @@
+# k8s/services/accounts/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accounts-service
+  namespace: gt-app
+  labels:
+    app: accounts-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: accounts-service
+  template:
+    metadata:
+      labels:
+        app: accounts-service
+    spec:
+      containers:
+      - name: accounts
+        image: your-registry/gt-app-accounts:latest # Update with your image registry
+        ports:
+        - containerPort: 3001
+        envFrom:
+        - configMapRef:
+            name: accounts-config
+        - secretRef:
+            name: accounts-secret
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.35
+        command: [ 'sh', '-c', 'until nc -z postgres 5432; do echo waiting for postgres; sleep 2; done;' ]
+      - name: wait-for-kafka
+        image: busybox:1.35
+        command: [ 'sh', '-c', 'until nc -z kafka 9092; do echo waiting for kafka; sleep 2; done;' ]

@@ -10,10 +10,11 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "@repo/typescript-config": "*",
         "@repo/common": "*",
         "@repo/common-backend": "*",
         "@repo/db": "*",
+        "@repo/typescript-config": "*",
+        "dotenv": "^17.2.3",
         "express": "^5.1.0",
         "morgan": "^1.10.1"
     },

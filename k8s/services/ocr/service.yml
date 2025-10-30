@@ -1,0 +1,17 @@
+# k8s/services/ocr/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ocr-service
+  namespace: gt-app
+  labels:
+    app: ocr-service
+spec:
+  selector:
+    app: ocr-service
+  ports:
+  - name: http
+    port: 3003
+    targetPort: 3003
+    protocol: TCP
+  type: ClusterIP
