@@ -330,7 +330,7 @@ export const updateCustomer = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    if (!userId) return;
+    if (!userId || !id) return;
     // Get existing customer
     const existingCustomer = await prisma.customer.findFirst({
         where: { id, userId },
@@ -459,7 +459,7 @@ export const deleteCustomer = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     const { id } = req.params;
 
-    if (!userId && !id) return;
+    if (!userId || !id) return;
 
     const customer = await prisma.customer.findFirst({
         where: { id, userId },
@@ -535,7 +535,7 @@ export const deleteCustomer = asyncHandler(async (req, res) => {
         email: customer.email,
         deletedAt: new Date().toISOString(),
         deletedBy: userId,
-        hasOutstandingSales: false,
+        hasOutstandingBalance: false,
         finalBalance: 0,
         reason: "Manual deletion via customer management",
     });
@@ -554,6 +554,10 @@ export const getCustomerLedger = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     const { id } = req.params;
     const { startDate, endDate, limit = 50, offset = 0 } = req.query;
+
+    if (!userId || !id) {
+        throw new CustomError(400, "params are required");
+    }
 
     // Verify customer belongs to user
     const customer = await prisma.customer.findFirst({
@@ -593,6 +597,10 @@ export const getCustomerStatement = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     const { id } = req.params;
     const { startDate, endDate, format = "json" } = req.query;
+
+    if (!userId || !id) {
+        throw new CustomError(400, "params missing");
+    }
 
     // Verify customer belongs to user
     const customer = await prisma.customer.findFirst({
@@ -762,8 +770,9 @@ export const getCustomerAnalytics = asyncHandler(async (req, res) => {
             outstandingAmount: tc._sum.remainingAmount || 0,
             saleCount: tc._count,
             collectionRate: tc._sum.amount
-                ? ((tc._sum.amount - (tc._sum.remainingAmount || 0)) /
-                      tc._sum.amount) *
+                ? ((Number(tc._sum.amount) -
+                      Number(tc._sum.remainingAmount || 0)) /
+                      Number(tc._sum.amount)) *
                   100
                 : 0,
         };
@@ -826,8 +835,8 @@ export const getCustomerAnalytics = asyncHandler(async (req, res) => {
                 totalOutstanding: salesStats._sum.remainingAmount || 0,
                 averageSaleValue: salesStats._avg.amount || 0,
                 collectionRate: salesStats._sum.amount
-                    ? ((receiptStats._sum.amount || 0) /
-                          salesStats._sum.amount) *
+                    ? (Number(receiptStats._sum.amount || 0) /
+                          Number(salesStats._sum.amount)) *
                       100
                     : 0,
             },

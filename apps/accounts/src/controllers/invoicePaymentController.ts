@@ -773,7 +773,7 @@ export const deleteInvoicePayment = asyncHandler(async (req, res) => {
  */
 
 export const getPaymentSummary = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { startDate, endDate, partyId } = req.query;
 
     const start = startDate
@@ -826,7 +826,7 @@ export const getPaymentSummary = asyncHandler(async (req, res) => {
                 totalCount: totalPayments._count,
                 averagePayment:
                     totalPayments._count > 0
-                        ? (totalPayments._sum.amount || 0) /
+                        ? Number(totalPayments._sum.amount || 0) /
                           totalPayments._count
                         : 0,
             },
@@ -843,7 +843,7 @@ export const getPaymentSummary = asyncHandler(async (req, res) => {
  */
 
 export const getPaymentAnalytics = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { startDate, endDate, partyId, method } = req.query;
 
     const start = startDate
@@ -913,7 +913,7 @@ export const getPaymentAnalytics = asyncHandler(async (req, res) => {
             totalPayments: tp._sum.amount || 0,
             paymentCount: tp._count,
             averagePayment:
-                tp._count > 0 ? (tp._sum.amount || 0) / tp._count : 0,
+                tp._count > 0 ? Number(tp._sum.amount || 0) / tp._count : 0,
         };
     });
 
@@ -963,8 +963,8 @@ export const getPaymentAnalytics = asyncHandler(async (req, res) => {
                 paymentCount: paymentStats._count,
                 averagePayment: paymentStats._avg.amount || 0,
                 netPayments:
-                    (paymentStats._sum.amount || 0) -
-                    (paymentStats._sum.charges || 0),
+                    Number(paymentStats._sum.amount || 0) -
+                    Number(paymentStats._sum.charges || 0),
                 digitalPaymentRate:
                     paymentStats._count > 0
                         ? (digitalPayments / paymentStats._count) * 100
@@ -977,7 +977,7 @@ export const getPaymentAnalytics = asyncHandler(async (req, res) => {
                 count: mb._count,
                 charges: mb._sum.charges || 0,
                 averageAmount:
-                    mb._count > 0 ? (mb._sum.amount || 0) / mb._count : 0,
+                    mb._count > 0 ? Number(mb._sum.amount || 0) / mb._count : 0,
             })),
             topParties: topPartiesWithDetails,
             dailyTrends: Object.values(dailyTrends).sort((a, b) =>
@@ -994,7 +994,7 @@ export const getPaymentAnalytics = asyncHandler(async (req, res) => {
  */
 
 export const getCashFlowAnalysis = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { months = 12 } = req.query;
 
     const endDate = new Date();

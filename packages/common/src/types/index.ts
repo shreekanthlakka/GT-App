@@ -1,11 +1,14 @@
 // packages/common/src/types/index.ts
-export interface PaginationParams {
-    page: number;
-    limit: number;
-    search?: string;
-    sortBy?: string;
-    sortOrder?: "asc" | "desc";
-}
+
+export * from "./api-responses";
+
+// export interface PaginationParams {
+//     page: number;
+//     limit: number;
+//     search?: string;
+//     sortBy?: string;
+//     sortOrder?: "asc" | "desc";
+// }
 
 export interface PaginationResult<T> {
     data: T[];
@@ -19,13 +22,13 @@ export interface PaginationResult<T> {
     };
 }
 
-export interface ApiResponse<T = any> {
-    success: boolean;
-    message: string;
-    data?: T;
-    error?: any;
-    statusCode: number;
-}
+// export interface ApiResponse<T = any> {
+//     success: boolean;
+//     message: string;
+//     data?: T;
+//     error?: any;
+//     statusCode: number;
+// }
 
 export interface DateRange {
     startDate?: Date;

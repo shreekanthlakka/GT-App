@@ -19,7 +19,7 @@ import { SendEmailRequestPublisher } from "@repo/common-backend/publisher";
 import { InventoryService } from "../services/inventoryService";
 
 export const createInvoice = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const {
         invoiceNo,
         date,
