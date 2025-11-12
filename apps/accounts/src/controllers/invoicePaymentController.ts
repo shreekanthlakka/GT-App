@@ -3,6 +3,7 @@ import {
     asyncHandler,
     CustomError,
     CustomResponse,
+    generateInvoicePaymentVoucherId,
     generateVoucherId,
 } from "@repo/common-backend/utils";
 import { logger, LogCategory } from "@repo/common-backend/logger";
@@ -17,7 +18,8 @@ import { LedgerService } from "../services/ledgerService";
 import { SendEmailRequestPublisher } from "@repo/common-backend/publisher";
 
 export const createInvoicePayment = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
+    if (!userId) return;
     const {
         amount,
         date,
@@ -35,6 +37,7 @@ export const createInvoicePayment = asyncHandler(async (req, res) => {
         transactionId,
         upiTransactionId,
         charges,
+        sequenceNo,
     } = req.body;
 
     logger.info("Creating invoice payment", LogCategory.ACCOUNTS, {
@@ -66,6 +69,7 @@ export const createInvoicePayment = asyncHandler(async (req, res) => {
                 amount: true,
                 remainingAmount: true,
                 status: true,
+                date: true,
             },
         });
 
@@ -93,9 +97,14 @@ export const createInvoicePayment = asyncHandler(async (req, res) => {
         }
     }
 
-    const voucherId = generateVoucherId("PAY");
     const paymentDate = new Date(date);
     const paymentAmount = Number(amount);
+
+    const voucherId = generateInvoicePaymentVoucherId(
+        party.name,
+        date,
+        sequenceNo
+    );
 
     // Create payment
     const payment = await prisma.invoicePayment.create({
@@ -120,6 +129,7 @@ export const createInvoicePayment = asyncHandler(async (req, res) => {
             partyId,
             invoiceId,
             userId,
+            sequenceNo,
         },
         include: {
             party: {
@@ -172,7 +182,7 @@ export const createInvoicePayment = asyncHandler(async (req, res) => {
         paymentId: payment.id,
         partyId,
         amount: paymentAmount,
-        description: payment.description,
+        description: payment.description || `Payment made for ${party.name}`,
         userId,
         date: paymentDate,
     });
@@ -202,11 +212,11 @@ export const createInvoicePayment = asyncHandler(async (req, res) => {
         date: payment.date.toISOString(),
         method: payment.method,
         status: payment.status,
-        reference: payment.reference,
-        description: payment.description,
+        reference: payment.reference || undefined,
+        description: payment.description || undefined,
         partyId: payment.partyId,
         partyName: party.name,
-        invoiceId: payment.invoiceId,
+        invoiceId: payment.invoiceId || undefined,
         invoiceNumber: invoice?.invoiceNo,
         appliedToInvoices: invoice
             ? [
@@ -273,7 +283,7 @@ export const createInvoicePayment = asyncHandler(async (req, res) => {
                 recipient: {
                     email: party.email,
                     name: party.name,
-                    phone: party.phone,
+                    phone: party.phone || undefined,
                 },
                 email: {
                     subject: `Payment Confirmation - ₹${payment.amount}`,
@@ -338,7 +348,7 @@ export const createInvoicePayment = asyncHandler(async (req, res) => {
  */
 
 export const getInvoicePayments = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const {
         page = 1,
         limit = 10,
@@ -449,7 +459,7 @@ export const getInvoicePayments = asyncHandler(async (req, res) => {
 });
 
 export const getInvoicePaymentById = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
 
     const payment = await prisma.invoicePayment.findFirst({
@@ -517,9 +527,13 @@ export const getInvoicePaymentById = asyncHandler(async (req, res) => {
  */
 
 export const updateInvoicePayment = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
     const updateData = req.body;
+
+    if (!userId || !id) {
+        throw new CustomError(400);
+    }
 
     // Get existing payment
     const existingPayment = await prisma.invoicePayment.findFirst({
@@ -652,8 +666,11 @@ export const updateInvoicePayment = asyncHandler(async (req, res) => {
  */
 
 export const deleteInvoicePayment = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
+    if (!userId || !id) {
+        throw new CustomError(400, "ids required");
+    }
 
     const payment = await prisma.invoicePayment.findFirst({
         where: { id, userId },
@@ -739,7 +756,7 @@ export const deleteInvoicePayment = asyncHandler(async (req, res) => {
         date: payment.date.toISOString(),
         partyId: payment.partyId,
         partyName: payment.party.name,
-        invoiceId: payment.invoiceId,
+        invoiceId: payment.invoiceId || undefined,
         invoiceNumber: payment.invoice?.invoiceNo,
         deletedAt: new Date().toISOString(),
         deletedBy: userId,
@@ -1156,39 +1173,41 @@ export const getCashFlowAnalysis = asyncHandler(async (req, res) => {
             cashFlowTrends,
             summary: {
                 totalPaymentsOut: cashFlowTrends.reduce(
-                    (sum, t) => sum + t.paymentsOut,
+                    (sum, t) => sum + t.paymentsOut!,
                     0
                 ),
                 totalReceiptsIn: cashFlowTrends.reduce(
-                    (sum, t) => sum + t.receiptsIn,
+                    (sum, t) => sum + t.receiptsIn!,
                     0
                 ),
                 netCashFlow: cashFlowTrends.reduce(
-                    (sum, t) => sum + t.netCashFlow,
+                    (sum, t) => sum + t.netCashFlow!,
                     0
                 ),
                 averageMonthlyPayments:
                     cashFlowTrends.length > 0
                         ? cashFlowTrends.reduce(
-                              (sum, t) => sum + t.paymentsOut,
+                              (sum, t) => sum + t.paymentsOut!,
                               0
                           ) / cashFlowTrends.length
                         : 0,
                 averageMonthlyReceipts:
                     cashFlowTrends.length > 0
                         ? cashFlowTrends.reduce(
-                              (sum, t) => sum + t.receiptsIn,
+                              (sum, t) => sum + t.receiptsIn!,
                               0
                           ) / cashFlowTrends.length
                         : 0,
                 bestCashFlowMonth: cashFlowTrends.reduce(
                     (best, current) =>
-                        current.netCashFlow > best.netCashFlow ? current : best,
+                        current.netCashFlow! > best.netCashFlow!
+                            ? current
+                            : best,
                     cashFlowTrends[0]
                 ),
                 worstCashFlowMonth: cashFlowTrends.reduce(
                     (worst, current) =>
-                        current.netCashFlow < worst.netCashFlow
+                        current.netCashFlow! < worst.netCashFlow!
                             ? current
                             : worst,
                     cashFlowTrends[0]

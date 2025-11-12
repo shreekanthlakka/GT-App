@@ -96,3 +96,8 @@ export const customerService = createServiceClient(
 export const invoiceService = createServiceClient(
     import.meta.env.VITE_INVOICE_API_URL || "http://localhost:3002/api/v1"
 );
+
+export const invoicePaymentService = createServiceClient(
+    import.meta.env.VITE_INVOICE_PAYMENT_API_URL ||
+        "http://localhost:3002/api/v1"
+);

@@ -4,6 +4,7 @@ import {
     asyncHandler,
     CustomError,
     CustomResponse,
+    generateInvoiceVoucherId,
     generateVoucherId,
 } from "@repo/common-backend/utils";
 import { logger, LogCategory } from "@repo/common-backend/logger";
@@ -20,6 +21,7 @@ import { InventoryService } from "../services/inventoryService";
 
 export const createInvoice = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
+    if (!userId) return;
     const {
         invoiceNo,
         date,
@@ -76,11 +78,11 @@ export const createInvoice = asyncHandler(async (req, res) => {
         );
     }
 
-    const voucherId = generateVoucherId("INV");
     const invoiceDate = new Date(date);
     const invoiceDueDate = dueDate ? new Date(dueDate) : null;
     const invoiceAmount = Number(amount);
     const remainingAmount = invoiceAmount;
+    const voucherId = generateInvoiceVoucherId(party.name, date, invoiceNo);
 
     // Create invoice
     const invoice = await prisma.invoice.create({
@@ -193,7 +195,7 @@ export const createInvoice = asyncHandler(async (req, res) => {
                 recipient: {
                     email: party.email,
                     name: party.name,
-                    phone: party.phone,
+                    phone: party.phone || undefined,
                 },
                 email: {
                     subject: `New Invoice ${invoice.invoiceNo} - ₹${invoice.amount}`,
@@ -255,7 +257,8 @@ export const createInvoice = asyncHandler(async (req, res) => {
  */
 
 export const getInvoices = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
+    if (!userId) return;
     const {
         page = 1,
         limit = 10,
@@ -384,8 +387,11 @@ export const getInvoices = asyncHandler(async (req, res) => {
  */
 
 export const getInvoiceById = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
+    if (!userId || !id) {
+        throw new CustomError(400);
+    }
 
     const invoice = await prisma.invoice.findFirst({
         where: {
@@ -470,9 +476,13 @@ export const getInvoiceById = asyncHandler(async (req, res) => {
  */
 
 export const updateInvoice = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
     const updateData = req.body;
+
+    if (!userId || !id) {
+        throw new CustomError(400);
+    }
 
     // Get existing invoice
     const existingInvoice = await prisma.invoice.findFirst({

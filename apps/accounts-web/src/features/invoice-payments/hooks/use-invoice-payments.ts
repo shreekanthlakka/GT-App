@@ -17,21 +17,36 @@ export const INVOICE_PAYMENT_QUERY_KEYS = {
     details: () => [...INVOICE_PAYMENT_QUERY_KEYS.all, "detail"] as const,
     detail: (id: string) =>
         [...INVOICE_PAYMENT_QUERY_KEYS.details(), id] as const,
-    summary: (params?: {
-        startDate?: string;
-        endDate?: string;
-        partyId?: string;
-    }) => [...INVOICE_PAYMENT_QUERY_KEYS.all, "summary", params] as const,
+
+    // NEW: Analytics keys
     analytics: (params?: {
         startDate?: string;
         endDate?: string;
-        method?: string;
+        partyId?: string;
     }) => [...INVOICE_PAYMENT_QUERY_KEYS.all, "analytics", params] as const,
-    cashFlow: (params?: { months?: number }) =>
-        [...INVOICE_PAYMENT_QUERY_KEYS.all, "cash-flow", params] as const,
+    summary: () => [...INVOICE_PAYMENT_QUERY_KEYS.all, "summary"] as const,
+    methodSummary: (params?: { startDate?: string; endDate?: string }) =>
+        [...INVOICE_PAYMENT_QUERY_KEYS.all, "method-summary", params] as const,
+    partyHistory: (
+        partyId: string,
+        params?: {
+            startDate?: string;
+            endDate?: string;
+        }
+    ) =>
+        [
+            ...INVOICE_PAYMENT_QUERY_KEYS.all,
+            "party-history",
+            partyId,
+            params,
+        ] as const,
+    pending: () => [...INVOICE_PAYMENT_QUERY_KEYS.all, "pending"] as const,
+    failed: () => [...INVOICE_PAYMENT_QUERY_KEYS.all, "failed"] as const,
+    pendingCheques: () =>
+        [...INVOICE_PAYMENT_QUERY_KEYS.all, "pending-cheques"] as const,
 };
 
-// Get all invoice payments
+// Existing hooks...
 export const useInvoicePayments = (params?: InvoicePaymentQueryType) => {
     return useQuery({
         queryKey: INVOICE_PAYMENT_QUERY_KEYS.list(params),
@@ -39,7 +54,6 @@ export const useInvoicePayments = (params?: InvoicePaymentQueryType) => {
     });
 };
 
-// Get invoice payment by ID
 export const useInvoicePayment = (id: string) => {
     return useQuery({
         queryKey: INVOICE_PAYMENT_QUERY_KEYS.detail(id),
@@ -48,23 +62,15 @@ export const useInvoicePayment = (id: string) => {
     });
 };
 
-// Get payment summary
-export const usePaymentSummary = (params?: {
-    startDate?: string;
-    endDate?: string;
-    partyId?: string;
-}) => {
-    return useQuery({
-        queryKey: INVOICE_PAYMENT_QUERY_KEYS.summary(params),
-        queryFn: () => invoicePaymentsApi.getPaymentSummary(params),
-    });
-};
+// ========================================
+// NEW: Analytics Hooks
+// ========================================
 
 // Get payment analytics
 export const usePaymentAnalytics = (params?: {
     startDate?: string;
     endDate?: string;
-    method?: string;
+    partyId?: string;
 }) => {
     return useQuery({
         queryKey: INVOICE_PAYMENT_QUERY_KEYS.analytics(params),
@@ -72,15 +78,139 @@ export const usePaymentAnalytics = (params?: {
     });
 };
 
-// Get cash flow analysis
-export const useCashFlowAnalysis = (params?: { months?: number }) => {
+// Get payment summary
+export const usePaymentSummary = () => {
     return useQuery({
-        queryKey: INVOICE_PAYMENT_QUERY_KEYS.cashFlow(params),
-        queryFn: () => invoicePaymentsApi.getCashFlowAnalysis(params),
+        queryKey: INVOICE_PAYMENT_QUERY_KEYS.summary(),
+        queryFn: () => invoicePaymentsApi.getPaymentSummary(),
     });
 };
 
-// Create invoice payment mutation
+// Get payment method summary
+export const usePaymentMethodSummary = (params?: {
+    startDate?: string;
+    endDate?: string;
+}) => {
+    return useQuery({
+        queryKey: INVOICE_PAYMENT_QUERY_KEYS.methodSummary(params),
+        queryFn: () => invoicePaymentsApi.getPaymentMethodSummary(params),
+    });
+};
+
+// Get party payment history
+export const usePartyPaymentHistory = (
+    partyId: string,
+    params?: {
+        startDate?: string;
+        endDate?: string;
+    }
+) => {
+    return useQuery({
+        queryKey: INVOICE_PAYMENT_QUERY_KEYS.partyHistory(partyId, params),
+        queryFn: () =>
+            invoicePaymentsApi.getPartyPaymentHistory(partyId, params),
+        enabled: !!partyId,
+    });
+};
+
+// Get pending payments
+export const usePendingPayments = () => {
+    return useQuery({
+        queryKey: INVOICE_PAYMENT_QUERY_KEYS.pending(),
+        queryFn: () => invoicePaymentsApi.getPendingPayments(),
+    });
+};
+
+// Get failed payments
+export const useFailedPayments = () => {
+    return useQuery({
+        queryKey: INVOICE_PAYMENT_QUERY_KEYS.failed(),
+        queryFn: () => invoicePaymentsApi.getFailedPayments(),
+    });
+};
+
+// Get pending cheques
+export const usePendingCheques = () => {
+    return useQuery({
+        queryKey: INVOICE_PAYMENT_QUERY_KEYS.pendingCheques(),
+        queryFn: () => invoicePaymentsApi.getPendingCheques(),
+    });
+};
+
+// ========================================
+// NEW: Action Mutations
+// ========================================
+
+// Retry failed payment
+export const useRetryPayment = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: string) => invoicePaymentsApi.retryPayment(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: INVOICE_PAYMENT_QUERY_KEYS.all,
+            });
+            toast.success("Payment retry initiated");
+        },
+        onError: (error: any) => {
+            toast.error(
+                error?.response?.data?.message || "Failed to retry payment"
+            );
+        },
+    });
+};
+
+// Cancel payment
+export const useCancelPayment = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+            invoicePaymentsApi.cancelPayment(id, reason),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: INVOICE_PAYMENT_QUERY_KEYS.all,
+            });
+            toast.success("Payment cancelled successfully");
+        },
+        onError: (error: any) => {
+            toast.error(
+                error?.response?.data?.message || "Failed to cancel payment"
+            );
+        },
+    });
+};
+
+// Refund payment
+export const useRefundPayment = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({
+            id,
+            amount,
+            reason,
+        }: {
+            id: string;
+            amount: number;
+            reason: string;
+        }) => invoicePaymentsApi.refundPayment(id, { amount, reason }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: INVOICE_PAYMENT_QUERY_KEYS.all,
+            });
+            toast.success("Payment refunded successfully");
+        },
+        onError: (error: any) => {
+            toast.error(
+                error?.response?.data?.message || "Failed to refund payment"
+            );
+        },
+    });
+};
+
+// Existing mutations (create, update, delete, mark cheque clearance)...
 export const useCreateInvoicePayment = () => {
     const queryClient = useQueryClient();
 
@@ -91,21 +221,16 @@ export const useCreateInvoicePayment = () => {
             queryClient.invalidateQueries({
                 queryKey: INVOICE_PAYMENT_QUERY_KEYS.lists(),
             });
-            queryClient.invalidateQueries({
-                queryKey: INVOICE_PAYMENT_QUERY_KEYS.summary(),
-            });
-            toast.success("Invoice payment created successfully");
+            toast.success("Payment created successfully");
         },
         onError: (error: any) => {
             toast.error(
-                error?.response?.data?.message ||
-                    "Failed to create invoice payment"
+                error?.response?.data?.message || "Failed to create payment"
             );
         },
     });
 };
 
-// Update invoice payment mutation
 export const useUpdateInvoicePayment = (id: string) => {
     const queryClient = useQueryClient();
 
@@ -119,21 +244,16 @@ export const useUpdateInvoicePayment = (id: string) => {
             queryClient.invalidateQueries({
                 queryKey: INVOICE_PAYMENT_QUERY_KEYS.lists(),
             });
-            queryClient.invalidateQueries({
-                queryKey: INVOICE_PAYMENT_QUERY_KEYS.summary(),
-            });
-            toast.success("Invoice payment updated successfully");
+            toast.success("Payment updated successfully");
         },
         onError: (error: any) => {
             toast.error(
-                error?.response?.data?.message ||
-                    "Failed to update invoice payment"
+                error?.response?.data?.message || "Failed to update payment"
             );
         },
     });
 };
 
-// Delete invoice payment mutation
 export const useDeleteInvoicePayment = () => {
     const queryClient = useQueryClient();
 
@@ -143,15 +263,38 @@ export const useDeleteInvoicePayment = () => {
             queryClient.invalidateQueries({
                 queryKey: INVOICE_PAYMENT_QUERY_KEYS.lists(),
             });
+            toast.success("Payment deleted successfully");
+        },
+        onError: (error: any) => {
+            toast.error(
+                error?.response?.data?.message || "Failed to delete payment"
+            );
+        },
+    });
+};
+
+export const useMarkChequeClearance = (id: string) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (data: {
+            clearanceDate?: string;
+            charges?: number;
+            notes?: string;
+        }) => invoicePaymentsApi.markChequeClearance(id, data),
+        onSuccess: () => {
             queryClient.invalidateQueries({
-                queryKey: INVOICE_PAYMENT_QUERY_KEYS.summary(),
+                queryKey: INVOICE_PAYMENT_QUERY_KEYS.detail(id),
             });
-            toast.success("Invoice payment deleted successfully");
+            queryClient.invalidateQueries({
+                queryKey: INVOICE_PAYMENT_QUERY_KEYS.lists(),
+            });
+            toast.success("Cheque clearance marked successfully");
         },
         onError: (error: any) => {
             toast.error(
                 error?.response?.data?.message ||
-                    "Failed to delete invoice payment"
+                    "Failed to mark cheque clearance"
             );
         },
     });

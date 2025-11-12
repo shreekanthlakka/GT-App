@@ -508,6 +508,7 @@ model InvoicePayment {
   id          String        @id @default(cuid())
   voucherId   String        @unique
   amount      Decimal       @db.Decimal(12, 2)
+  sequenceNo  String
   date        DateTime
   method      PaymentMethod
   reference   String?       // Bank ref, cheque no, UPI transaction ID
