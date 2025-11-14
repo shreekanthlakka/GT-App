@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db/prisma";
+import { InvoiceStatus, prisma } from "@repo/db/prisma";
 import {
     asyncHandler,
     CustomError,
@@ -708,7 +708,7 @@ export const deleteInvoicePayment = asyncHandler(async (req, res) => {
         const newRemainingAmount =
             Number(payment.invoice.amount) - newPaidAmount;
 
-        let newStatus = "PENDING";
+        let newStatus: InvoiceStatus = "PENDING";
         if (newPaidAmount > 0) {
             newStatus = "PARTIALLY_PAID";
         }

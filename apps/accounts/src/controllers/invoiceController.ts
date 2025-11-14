@@ -4,6 +4,7 @@ import {
     asyncHandler,
     CustomError,
     CustomResponse,
+    generateInvoicePaymentVoucherId,
     generateInvoiceVoucherId,
     generateVoucherId,
 } from "@repo/common-backend/utils";
@@ -613,8 +614,11 @@ export const updateInvoice = asyncHandler(async (req, res) => {
  */
 
 export const deleteInvoice = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
+    if (!userId || !id) {
+        throw new CustomError(400);
+    }
 
     const invoice = await prisma.invoice.findFirst({
         where: { id, userId },
@@ -701,9 +705,13 @@ export const deleteInvoice = asyncHandler(async (req, res) => {
  */
 
 export const markInvoiceAsPaid = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
-    const { paymentDate, paymentReference, notes } = req.body;
+
+    if (!userId || !id) {
+        throw new CustomError(400, "params");
+    }
+    const { paymentDate, paymentReference, notes, sequenceNo } = req.body;
 
     const invoice = await prisma.invoice.findFirst({
         where: { id, userId },
@@ -721,6 +729,7 @@ export const markInvoiceAsPaid = asyncHandler(async (req, res) => {
     }
 
     // Update invoice status
+
     const updatedInvoice = await prisma.invoice.update({
         where: { id },
         data: {
@@ -732,9 +741,16 @@ export const markInvoiceAsPaid = asyncHandler(async (req, res) => {
     });
 
     // Create payment record
+
+    const voucherId = generateInvoicePaymentVoucherId(
+        invoice.party.name,
+        paymentDate,
+        sequenceNo
+    );
+
     const payment = await prisma.invoicePayment.create({
         data: {
-            voucherId: generateVoucherId("PAY"),
+            voucherId,
             amount: invoice.remainingAmount,
             date: paymentDate ? new Date(paymentDate) : new Date(),
             method: "OTHER",
@@ -745,6 +761,7 @@ export const markInvoiceAsPaid = asyncHandler(async (req, res) => {
             partyId: invoice.partyId,
             invoiceId: invoice.id,
             userId,
+            sequenceNo,
         },
     });
 
@@ -808,7 +825,7 @@ export const markInvoiceAsPaid = asyncHandler(async (req, res) => {
  */
 
 export const getOverdueInvoices = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { page = 1, limit = 10, partyId, minDaysOverdue = 1 } = req.query;
 
     const skip = (Number(page) - 1) * Number(limit);
@@ -893,8 +910,10 @@ export const getOverdueInvoices = asyncHandler(async (req, res) => {
  */
 
 export const getInvoiceAnalytics = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { startDate, endDate, partyId, status } = req.query;
+
+    if (!userId) return;
 
     const start = startDate
         ? new Date(startDate as string)
@@ -976,8 +995,9 @@ export const getInvoiceAnalytics = asyncHandler(async (req, res) => {
             outstandingAmount: tp._sum.remainingAmount || 0,
             invoiceCount: tp._count,
             paymentRate: tp._sum.amount
-                ? ((tp._sum.amount - (tp._sum.remainingAmount || 0)) /
-                      tp._sum.amount) *
+                ? ((Number(tp._sum.amount) -
+                      Number(tp._sum.remainingAmount || 0)) /
+                      Number(tp._sum.amount)) *
                   100
                 : 0,
         };
@@ -1042,8 +1062,8 @@ export const getInvoiceAnalytics = asyncHandler(async (req, res) => {
             overview: {
                 totalInvoices: invoiceStats._sum.amount || 0,
                 totalPaid:
-                    (invoiceStats._sum.amount || 0) -
-                    (invoiceStats._sum.remainingAmount || 0),
+                    Number(invoiceStats._sum.amount || 0) -
+                    Number(invoiceStats._sum.remainingAmount || 0),
                 totalOutstanding: invoiceStats._sum.remainingAmount || 0,
                 totalTax: invoiceStats._sum.taxAmount || 0,
                 totalDiscount: invoiceStats._sum.discountAmount || 0,
@@ -1073,7 +1093,7 @@ export const getInvoiceAnalytics = asyncHandler(async (req, res) => {
  */
 
 export const getPaymentTimingAnalysis = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { months = 6 } = req.query;
 
     const endDate = new Date();

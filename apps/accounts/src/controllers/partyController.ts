@@ -232,7 +232,7 @@ export const getParties = asyncHandler(async (req, res) => {
 });
 
 export const getPartyById = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
 
     const party = await prisma.party.findFirst({
@@ -294,10 +294,13 @@ export const getPartyById = asyncHandler(async (req, res) => {
 });
 
 export const updateParty = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
     const updateData = req.body;
 
+    if (!userId || !id) {
+        throw new CustomError(400, "ids required");
+    }
     // Get existing party
     const existingParty = await prisma.party.findFirst({
         where: { id, userId },
@@ -396,8 +399,12 @@ export const updateParty = asyncHandler(async (req, res) => {
 });
 
 export const deleteParty = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
+
+    if (!userId || !id) {
+        throw new CustomError(400, "Ids required");
+    }
 
     const party = await prisma.party.findFirst({
         where: { id, userId },
@@ -465,8 +472,8 @@ export const deleteParty = asyncHandler(async (req, res) => {
     await partyDeletedPublisher.publish({
         id: party.id,
         name: party.name,
-        gstNo: party.gstNo,
-        category: party.category,
+        gstNo: party.gstNo || undefined,
+        category: party.category || undefined,
         deletedAt: new Date().toISOString(),
         deletedBy: userId,
         hasOutstandingInvoices: false,
@@ -485,9 +492,13 @@ export const deleteParty = asyncHandler(async (req, res) => {
 });
 
 export const getPartyLedger = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
     const { startDate, endDate, limit = 50, offset = 0 } = req.query;
+
+    if (!id || !userId) {
+        throw new CustomError(400, "Ids required");
+    }
 
     // Verify party belongs to user
     const party = await prisma.party.findFirst({
@@ -524,9 +535,12 @@ export const getPartyLedger = asyncHandler(async (req, res) => {
 });
 
 export const getPartyStatement = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
     const { startDate, endDate, format = "json" } = req.query;
+    if (!userId || !id) {
+        throw new CustomError(400, "Ids required");
+    }
 
     // Verify party belongs to user
     const party = await prisma.party.findFirst({
@@ -595,7 +609,7 @@ export const getPartyStatement = asyncHandler(async (req, res) => {
 });
 
 export const getPartyAnalytics = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { startDate, endDate, partyId } = req.query;
 
     const start = startDate
@@ -657,8 +671,9 @@ export const getPartyAnalytics = asyncHandler(async (req, res) => {
             outstandingAmount: tp._sum.remainingAmount || 0,
             invoiceCount: tp._count,
             paymentRate: tp._sum.amount
-                ? ((tp._sum.amount - (tp._sum.remainingAmount || 0)) /
-                      tp._sum.amount) *
+                ? ((Number(tp._sum.amount) -
+                      Number(tp._sum.remainingAmount || 0)) /
+                      Number(tp._sum.amount)) *
                   100
                 : 0,
         };
@@ -703,11 +718,12 @@ export const getPartyAnalytics = asyncHandler(async (req, res) => {
                 paymentCount: paymentStats._count,
                 averageInvoiceValue:
                     invoiceStats._count > 0
-                        ? (invoiceStats._sum.amount || 0) / invoiceStats._count
+                        ? Number(invoiceStats._sum.amount || 0) /
+                          invoiceStats._count
                         : 0,
                 paymentRate: invoiceStats._sum.amount
-                    ? ((paymentStats._sum.amount || 0) /
-                          (invoiceStats._sum.amount || 1)) *
+                    ? (Number(paymentStats._sum.amount || 0) /
+                          Number(invoiceStats._sum.amount || 1)) *
                       100
                     : 0,
             },
@@ -720,9 +736,13 @@ export const getPartyAnalytics = asyncHandler(async (req, res) => {
 });
 
 export const getPartyPerformance = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { id } = req.params;
     const { months = 6 } = req.query;
+
+    if (!userId || !id) {
+        throw new CustomError(400);
+    }
 
     // Verify party belongs to user
     const party = await prisma.party.findFirst({
@@ -893,11 +913,11 @@ export const getPartyPerformance = asyncHandler(async (req, res) => {
 });
 
 export const getPartyComparison = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const { partyIds, startDate, endDate, metric = "amount" } = req.query;
 
-    if (!partyIds) {
-        throw new CustomError(400, "Party IDs are required");
+    if (!partyIds || !userId) {
+        throw new CustomError(400, "IDs are required");
     }
 
     const ids = Array.isArray(partyIds) ? partyIds : [partyIds];
@@ -955,8 +975,8 @@ export const getPartyComparison = asyncHandler(async (req, res) => {
                 paymentCount: paymentStats._count,
                 outstandingAmount: invoiceStats._sum.remainingAmount || 0,
                 paymentRate: invoiceStats._sum.amount
-                    ? ((paymentStats._sum.amount || 0) /
-                          invoiceStats._sum.amount) *
+                    ? (Number(paymentStats._sum.amount || 0) /
+                          Number(invoiceStats._sum.amount)) *
                       100
                     : 0,
             };

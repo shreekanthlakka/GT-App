@@ -14,41 +14,6 @@ import {
     DateRange,
 } from "@repo/common/types";
 
-// export interface Invoice {
-//     id: string;
-//     invoiceNo: string;
-//     date: string;
-//     dueDate?: string | null;
-//     amount: number;
-//     items?: any[];
-//     description?: string | null;
-//     taxAmount?: number;
-//     discountAmount: number;
-//     roundOffAmount: number;
-//     notes?: string | null;
-//     partyId: string;
-//     party: {
-//         id: string;
-//         name: string;
-//         gstNo?: string | null;
-//     };
-//     status: "PENDING" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "CANCELLED";
-//     paidAmount: number;
-//     outstandingAmount: number;
-//     createdAt: string;
-//     updatedAt: string;
-// }
-
-// export interface PaginatedResponse<T> {
-//     data: T[];
-//     meta: {
-//         page: number;
-//         limit: number;
-//         total: number;
-//         totalPages: number;
-//     };
-// }
-
 export const invoicesApi = {
     getInvoices: async (
         params?: InvoiceQueryType

@@ -43,5 +43,6 @@ router.delete("/:id", authenticate, deleteInvoicePayment);
 // Analytics endpoints
 router.get("/analytics", authenticate, getPaymentAnalytics);
 router.get("/cash-flow", authenticate, getCashFlowAnalysis);
+router.get("/summery", authenticate, getPaymentSummary);
 
 export default router;
