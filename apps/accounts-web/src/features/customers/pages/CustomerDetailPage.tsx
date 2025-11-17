@@ -20,10 +20,17 @@ export const CustomerDetailPage = () => {
     const { data: customer, isLoading } = useCustomer(id!);
     const { data: ledger } = useCustomerLedger(id!, undefined, {
         enabled: activeTab === "ledger",
-    } as any);
-    const { data: statement } = useCustomerStatement(id!, undefined, {
-        enabled: activeTab === "statement",
-    } as any);
+    });
+    const { data: statement } = useCustomerStatement(
+        id!,
+        {
+            startDate: "1970-01-01",
+            endDate: new Date().toISOString().substring(0, 10),
+        },
+        {
+            enabled: activeTab === "statement",
+        }
+    );
 
     if (isLoading) {
         return <Skeleton className="h-96 w-full" />;
@@ -359,3 +366,5 @@ export const CustomerDetailPage = () => {
         </div>
     );
 };
+
+export default CustomerDetailPage;

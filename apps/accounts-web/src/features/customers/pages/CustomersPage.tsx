@@ -17,6 +17,7 @@ export const CustomersPage = () => {
         search: debouncedSearch,
         page,
         limit: 10,
+        sortOrder: "desc",
     });
 
     const deleteMutation = useDeleteCustomer();
@@ -190,3 +191,5 @@ export const CustomersPage = () => {
         </div>
     );
 };
+
+export default CustomersPage;

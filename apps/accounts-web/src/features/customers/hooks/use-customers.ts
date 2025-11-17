@@ -320,12 +320,16 @@ export const useCustomerLedger = (
         endDate?: string;
         page?: number;
         limit?: number;
+    },
+    options?: {
+        enabled?: boolean;
     }
 ) => {
     return useQuery({
         queryKey: CUSTOMER_QUERY_KEYS.ledger(id, params),
         queryFn: () => customersApi.getCustomerLedger(id, params),
-        enabled: !!id,
+        // enabled: !!id,
+        enabled: options?.enabled ?? !!id,
     });
 };
 
@@ -334,12 +338,20 @@ export const useCustomerStatement = (
     params: {
         startDate: string;
         endDate: string;
+    },
+    options?: {
+        enabled?: boolean;
     }
 ) => {
     return useQuery({
         queryKey: CUSTOMER_QUERY_KEYS.statement(id, params),
         queryFn: () => customersApi.getCustomerStatement(id, params),
-        enabled: !!id && !!params.startDate && !!params.endDate,
+        // enabled: !!id && !!params.startDate && !!params.endDate,
+        enabled:
+            (options?.enabled ?? true) &&
+            !!id &&
+            !!params.startDate &&
+            !!params.endDate,
     });
 };
 

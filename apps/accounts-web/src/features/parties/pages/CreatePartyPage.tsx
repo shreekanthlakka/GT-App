@@ -1,18 +1,21 @@
-// apps/accounts-web/src/features/customers/pages/CreateCustomerPage.tsx
+// ========================================
+// PARTY CREATE PAGE
+// ========================================
+// File: apps/accounts-web/src/features/parties/pages/CreatePartyPage.tsx
 
 import { useNavigate } from "react-router-dom";
-import { CustomerForm } from "../components/CustomerForm";
-import { useCreateCustomer } from "../hooks/use-customers";
+import { PartyForm } from "../components/PartyForm";
+import { useCreateParty } from "../hooks/use-parties";
 import { ArrowLeft } from "lucide-react";
-import type { CreateCustomerType } from "@repo/common/schemas";
+import type { CreatePartyType, UpdatePartyType } from "@repo/common/schemas";
 
-export const CreateCustomerPage = () => {
+const CreatePartyPage = () => {
     const navigate = useNavigate();
-    const createMutation = useCreateCustomer();
+    const createMutation = useCreateParty();
 
-    const handleSubmit = async (data: CreateCustomerType) => {
+    const handleSubmit = async (data: CreatePartyType) => {
         await createMutation.mutateAsync(data);
-        navigate("/customers");
+        navigate("/parties");
     };
 
     return (
@@ -20,26 +23,25 @@ export const CreateCustomerPage = () => {
             {/* Header */}
             <div className="flex items-center gap-4">
                 <button
-                    onClick={() => navigate("/customers")}
+                    onClick={() => navigate("/parties")}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                     <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div>
-                    <h1 className="text-2xl font-bold">Create New Customer</h1>
+                    <h1 className="text-2xl font-bold">Add New Party</h1>
                     <p className="text-gray-600">
-                        Add a new customer to your database
+                        Create a new supplier/vendor record
                     </p>
                 </div>
             </div>
 
             {/* Form */}
-            <CustomerForm
+            <PartyForm
                 onSubmit={handleSubmit}
                 isLoading={createMutation.isPending}
             />
         </div>
     );
 };
-
-export default CreateCustomerPage;
+export default CreatePartyPage;

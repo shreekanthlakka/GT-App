@@ -6,6 +6,7 @@ export * from "./components/ui/table";
 export * from "./components/ui/badge";
 export * from "./components/ui/label";
 export * from "./components/ui/select";
+export * from "./components/ui/skeleton";
 
 // Hooks
 export * from "./hooks/use-debounce";

@@ -15,7 +15,8 @@ import { kafkaWrapper } from "@repo/common-backend/kafka";
 import { LedgerService } from "../services/ledgerService";
 
 export const createParty = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
+    if (!userId) return;
     const {
         name,
         gstNo,
@@ -109,22 +110,22 @@ export const createParty = asyncHandler(async (req, res) => {
     await partyCreatedPublisher.publish({
         id: party.id,
         name: party.name,
-        gstNo: party.gstNo,
-        panNo: party.panNo,
-        phone: party.phone,
-        email: party.email,
-        address: party.address,
-        city: party.city,
-        state: party.state,
-        pincode: party.pincode,
-        contactPerson: party.contactPerson,
+        gstNo: party.gstNo || undefined,
+        panNo: party.panNo || undefined,
+        phone: party.phone || undefined,
+        email: party.email || undefined,
+        address: party.address || undefined,
+        city: party.city || undefined,
+        state: party.state || undefined,
+        pincode: party.pincode || undefined,
+        contactPerson: party.contactPerson || undefined,
         bankDetails: party.bankDetails,
-        category: party.category,
-        paymentTerms: party.paymentTerms,
+        category: party.category || undefined,
+        paymentTerms: party.paymentTerms || undefined,
         creditLimit: Number(party.creditLimit),
-        taxId: party.taxId,
-        website: party.website,
-        notes: party.notes,
+        taxId: party.taxId || undefined,
+        website: party.website || undefined,
+        notes: party.notes || undefined,
         createdBy: userId,
         createdAt: party.createdAt.toISOString(),
     });
@@ -142,7 +143,7 @@ export const createParty = asyncHandler(async (req, res) => {
 });
 
 export const getParties = asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     const {
         page = 1,
         limit = 10,

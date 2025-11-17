@@ -4,29 +4,31 @@ import { PaginationSchema } from "./baseSchemas";
 
 export const CreatePartySchema = z.object({
     name: z.string().min(1, "Party name is required"),
-    gstNo: z.string().optional(),
-    panNo: z.string().optional(),
-    phone: z.string().optional(),
-    email: z.string().email().optional().or(z.literal("")),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    pincode: z.string().optional(),
-    contactPerson: z.string().optional(),
+    gstNo: z.string().optional().nullable(),
+    panNo: z.string().optional().nullable(),
+    phone: z.string().optional().nullable(),
+    email: z.string().email().optional().or(z.literal("")).nullable(),
+    address: z.string().optional().nullable(),
+    city: z.string().optional().nullable(),
+    state: z.string().optional().nullable(),
+    pincode: z.string().optional().nullable(),
+    contactPerson: z.string().optional().nullable(),
     bankDetails: z
         .object({
-            bankName: z.string().optional(),
-            accountNo: z.string().optional(),
-            ifsc: z.string().optional(),
-            branch: z.string().optional(),
+            bankName: z.string().optional().nullable(),
+            accountNo: z.string().optional().nullable(),
+            ifsc: z.string().optional().nullable(),
+            branch: z.string().optional().nullable(),
         })
-        .optional(),
-    category: z.string().optional(),
-    paymentTerms: z.number().optional(),
+        .optional()
+        .nullable(),
+    category: z.string().optional().nullable(),
+    paymentTerms: z.number().optional().nullable(),
     creditLimit: z.number().min(0).default(0),
-    taxId: z.string().optional(),
-    website: z.string().url().optional().or(z.literal("")),
-    notes: z.string().optional(),
+    taxId: z.string().optional().nullable(),
+    website: z.string().url().optional().or(z.literal("")).nullable(),
+    notes: z.string().optional().nullable(),
+    isActive: z.boolean().optional().nullable(),
 });
 
 export const UpdatePartySchema = CreatePartySchema.partial();
