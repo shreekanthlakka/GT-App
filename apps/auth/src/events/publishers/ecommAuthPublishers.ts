@@ -5,6 +5,7 @@ import {
     EcommerceUserLoggedOutEvent,
     EcommerceUserLoginFailedEvent,
     EcommerceUserPhoneVerifiedEvent,
+    EcommerceUserSessionCreatedEvent,
 } from "@repo/common-backend/interfaces";
 import { KafkaPublisher } from "@repo/common-backend/kafka";
 import { Subjects } from "@repo/common/subjects";
@@ -81,6 +82,17 @@ class EcommerceUserLoginFailedPublisher extends KafkaPublisher<EcommerceUserLogi
     }
 }
 
+class EcommerceUserSessionCreatedPublisher extends KafkaPublisher<EcommerceUserSessionCreatedEvent> {
+    subject = Subjects.EcommerceUserSessionCreated as const;
+    topic = Topic; // Uses AUTH_SESSION_EVENTS
+
+    protected generateMessageKey(
+        data: EcommerceUserSessionCreatedEvent["data"]
+    ): string {
+        return `${data.ecommerceUserId}-${data.sessionId}`;
+    }
+}
+
 export {
     EcommerceUserCreatedPublisher,
     EcommerceUserLoggedInPublisher,
@@ -88,5 +100,5 @@ export {
     EcommerceUserLoginFailedPublisher,
     EcommerceUserEmailVerifiedPublisher,
     EcommerceUserPhoneVerifiedPublisher,
-    // EcommerceUserSessionCreatedPublisher,
+    EcommerceUserSessionCreatedPublisher,
 };

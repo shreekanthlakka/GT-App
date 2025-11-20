@@ -17,7 +17,10 @@ import {
     EcommerceUserLoginFailedPublisher,
 } from "../events/publishers/ecommAuthPublishers";
 import { kafkaWrapper } from "@repo/common-backend/kafka";
-import { createUserSession, extractDeviceInfo } from "../helpers/authHelpers";
+import {
+    createEcommerceUserSession,
+    extractDeviceInfo,
+} from "../helpers/authHelpers";
 import {
     CreateEcommerceUserType,
     EcommerceLoginType,
@@ -382,7 +385,7 @@ export const login = asyncHandler(async (req, res) => {
     }
 
     // Create session
-    const session = await createUserSession(
+    const session = await createEcommerceUserSession(
         user.id,
         req,
         validatedData.rememberMe
@@ -573,7 +576,7 @@ export const refreshToken = asyncHandler(async (req, res) => {
         const session = await prisma.ecommerceUserSession.findUnique({
             where: {
                 id: decoded.sessionId,
-                userId: decoded.userId,
+                ecommerceUserId: decoded.userId,
                 isActive: true,
             },
             include: {

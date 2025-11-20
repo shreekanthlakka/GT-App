@@ -927,6 +927,49 @@ export interface EcommerceUserSessionTerminatedEvent extends BaseEvent {
     };
 }
 
+// packages/common-backend/src/events/interfaces/ecomm-interfaces.ts
+
+export interface EcommerceUserSessionCreatedEvent extends BaseEvent {
+    subject: Subjects.EcommerceUserSessionCreated;
+    data: {
+        ecommerceUserId: string;
+        sessionId: string;
+        sessionToken: string; // Usually masked
+
+        createdAt: string;
+        expiresAt: string;
+
+        // Device information
+        deviceInfo: {
+            type: "mobile" | "desktop" | "tablet";
+            os?: string;
+            browser?: string;
+            version?: string;
+            userAgent: string;
+        };
+
+        // Location details
+        ipAddress: string;
+        location?: {
+            country?: string;
+            state?: string;
+            city?: string;
+        };
+
+        // Session characteristics
+        rememberMe: boolean;
+        sessionDuration: number; // hours
+
+        // Security context
+        riskScore?: number;
+        isSecure: boolean;
+
+        // User context
+        activeSessions: number;
+        cartItemsCount?: number;
+        wishlistItemsCount?: number;
+    };
+}
 // ========================================
 // EXPORT ALL ECOMMERCE EVENT TYPES
 // ========================================
@@ -955,4 +998,5 @@ export type EcommerceUserEventTypes =
     | EcommerceUserSocialLoginUnlinkedEvent
     | EcommerceUserSessionCreatedEvent
     | EcommerceUserSessionExpiredEvent
-    | EcommerceUserSessionTerminatedEvent;
+    | EcommerceUserSessionTerminatedEvent
+    | EcommerceUserSessionCreatedEvent;

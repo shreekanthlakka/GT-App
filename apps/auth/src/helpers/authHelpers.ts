@@ -3,6 +3,8 @@ import { prisma } from "@repo/db/prisma";
 import { Request, Response } from "express";
 import { generateVerificationToken } from "@repo/common-backend/utils";
 import { kafkaWrapper } from "@repo/common-backend/kafka";
+import { EcommerceUserSessionCreatedPublisher } from "../events/publishers/ecommAuthPublishers";
+import type { EcommerceUserSession } from "@repo/db/prisma";
 
 const generateTokens = async (
     user: any
@@ -94,17 +96,17 @@ const extractDeviceInfo = (req: Request) => {
 
 // Helper to create session
 const createEcommerceUserSession = async (
-    userId: string,
+    ecommerceUserId: string,
     req: Request,
     rememberMe: boolean = false
-) => {
+): Promise<EcommerceUserSession> => {
     const deviceInfo = extractDeviceInfo(req);
     const sessionDuration = rememberMe ? 30 * 24 : 24; // 30 days or 1 day
     const expiresAt = new Date(Date.now() + sessionDuration * 60 * 60 * 1000);
 
     const session = await prisma.ecommerceUserSession.create({
         data: {
-            ecommerceUserId: userId,
+            ecommerceUserId,
             sessionToken: generateVerificationToken(),
             refreshToken: generateVerificationToken(),
             expiresAt,
@@ -119,7 +121,7 @@ const createEcommerceUserSession = async (
         kafkaWrapper.producer
     );
     await sessionPublisher.publish({
-        userId,
+        ecommerceUserId,
         sessionId: session.id,
         sessionToken: session.sessionToken, // Masked in actual implementation
         createdAt: session.createdAt.toISOString(),
@@ -130,7 +132,7 @@ const createEcommerceUserSession = async (
         sessionDuration,
         isSecure: req.secure,
         activeSessions: await prisma.ecommerceUserSession.count({
-            where: { userId, isActive: true },
+            where: { ecommerceUserId, isActive: true },
         }),
     });
 
