@@ -27,7 +27,7 @@ class EcommerceUserLoggedInPublisher extends KafkaPublisher<EcommerceUserLoggedI
     protected generateMessageKey(
         data: EcommerceUserLoggedInEvent["data"]
     ): string {
-        return data.userId;
+        return `${data.email} - ${data.ecommerceUserId}`;
     }
 }
 
@@ -37,7 +37,7 @@ class EcommerceUserLoggedOutPublisher extends KafkaPublisher<EcommerceUserLogged
     protected generateMessageKey(
         data: EcommerceUserLoggedOutEvent["data"]
     ): string {
-        return data.userId;
+        return `${data.ecommerceUserId} - ${data.loggedOutAt}`;
     }
 }
 
@@ -57,7 +57,7 @@ class EcommerceUserEmailVerifiedPublisher extends KafkaPublisher<EcommerceUserEm
     protected generateMessageKey(
         data: EcommerceUserEmailVerifiedEvent["data"]
     ): string {
-        return data.userId;
+        return `${data.ecommerceUserId} - ${data.email}`;
     }
 }
 
@@ -67,7 +67,7 @@ class EcommerceUserPhoneVerifiedPublisher extends KafkaPublisher<EcommerceUserPh
     protected generateMessageKey(
         data: EcommerceUserPhoneVerifiedEvent["data"]
     ): string {
-        return data.userId;
+        return `${data.ecommerceUserId} - ${data.phone}`;
     }
 }
 

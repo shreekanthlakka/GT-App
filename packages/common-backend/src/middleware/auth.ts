@@ -7,7 +7,9 @@ interface JWTPayload {
     name?: string;
     userId: string;
     email: string;
-    role: string;
+    role?: string;
+    sessionId?: string;
+    type?: "internal" | "ecommerce";
     iat: number;
     exp: number;
 }
@@ -55,7 +57,7 @@ export const authenticate = async (
 
 export const authorize = (roles: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
-        if (!req.user) {
+        if (!req.user || !req.user.role) {
             throw new CustomError(401, "Authentication required");
         }
 

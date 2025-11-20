@@ -27,10 +27,10 @@ app.use((req, res, next) => {
 //                   ROUTES
 // ==============================================
 
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/internal/auth", authRoutes);
+app.use("/api/v1/internal/users", userRoutes);
 
-app.use("/api/v1/ecommerce/auth", ecommAuthRoutes);
+app.use("/api/v1/auth", ecommAuthRoutes);
 
 // ==============================================
 // ==============================================

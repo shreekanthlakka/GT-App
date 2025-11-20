@@ -106,3 +106,8 @@ export const partiesService = createServiceClient(
     import.meta.env.VITE_INVOICE_PAYMENT_API_URL ||
         "http://localhost:3002/api/v1"
 );
+
+export const salesService = createServiceClient(
+    import.meta.env.VITE_INVOICE_PAYMENT_API_URL ||
+        "http://localhost:3002/api/v1"
+);

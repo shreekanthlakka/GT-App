@@ -247,9 +247,9 @@ export const register = asyncHandler(async (req, res) => {
     res.status(response.statusCode).json(response);
 });
 
-// ========================================
-// LOGIN
-// ========================================
+// =========================================================================================
+//               ######################     LOGIN      ###############################
+// =========================================================================================
 
 export const login = asyncHandler(async (req, res) => {
     const validatedData: EcommerceLoginType = req.body;
@@ -436,7 +436,6 @@ export const login = asyncHandler(async (req, res) => {
         kafkaWrapper.producer
     );
     await loginPublisher.publish({
-        userId: user.id,
         email: user.email,
         name: user.name,
         loginMethod: "EMAIL_PASSWORD",
@@ -451,6 +450,7 @@ export const login = asyncHandler(async (req, res) => {
         loginAt: new Date().toISOString(),
         cartItemsCount: cartCount,
         wishlistItemsCount: wishlistCount,
+        ecommerceUserId: user.id,
     });
 
     logger.info("Ecommerce user login successful", LogCategory.AUTH, {
@@ -499,8 +499,8 @@ export const login = asyncHandler(async (req, res) => {
 // ========================================
 
 export const logout = asyncHandler(async (req, res) => {
-    const sessionId = req?.sessionId; // Assuming middleware sets this
-    const userId = req?.userId; // Assuming middleware sets this
+    const sessionId = req.user!.sessionId; // Assuming middleware sets this
+    const userId = req.user!.userId; // Assuming middleware sets this
 
     if (sessionId) {
         // Get session info for analytics
@@ -526,7 +526,7 @@ export const logout = asyncHandler(async (req, res) => {
                 kafkaWrapper.producer
             );
             await logoutPublisher.publish({
-                userId: userId!,
+                ecommerceUserId: userId!,
                 sessionId,
                 logoutMethod: "USER_ACTION",
                 sessionDuration,

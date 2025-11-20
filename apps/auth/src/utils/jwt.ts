@@ -11,6 +11,12 @@ interface JWTConfig {
     audience: string;
 }
 
+type Expiry = jwt.SignOptions["expiresIn"];
+
+function asExpiry(value: string | number): Expiry {
+    return value as Expiry;
+}
+
 const config: JWTConfig = {
     accessTokenSecret:
         process.env.JWT_ACCESS_SECRET || "your-super-secret-access-key",
@@ -41,13 +47,15 @@ export interface RefreshTokenPayload {
 
 // JWT Options
 interface JWTOptions {
-    expiresIn?: string;
+    expiresIn?: string | number;
     issuer?: string;
     audience?: string;
     subject?: string;
     notBefore?: string;
     jwtid?: string;
 }
+
+// type JWTOptions = Partial<jwt.SignOptions>;
 
 /**
  * Generate a JWT access token
@@ -56,6 +64,40 @@ interface JWTOptions {
  * @param options - Additional JWT options
  * @returns JWT token string
  */
+// export const generateJWT = (
+//     payload: AccessTokenPayload,
+//     expiresIn: string = config.accessTokenExpiry,
+//     options: Partial<JWTOptions> = {}
+// ): string => {
+//     try {
+//         const jwtOptions: jwt.SignOptions = {
+//             expiresIn: expiresIn as jwt.SignOptions["expiresIn"],
+//             issuer: options.issuer || config.issuer,
+//             audience: options.audience || config.audience,
+//             subject: payload.userId,
+//             algorithm: "HS256",
+//             ...options,
+//         };
+
+//         const token = jwt.sign(payload, config.accessTokenSecret, jwtOptions);
+
+//         logger.info("JWT token generated", LogCategory.AUTH, {
+//             userId: payload.userId,
+//             type: payload.type,
+//             expiresIn,
+//             sessionId: payload.sessionId,
+//         });
+
+//         return token;
+//     } catch (error) {
+//         logger.error("JWT generation failed", undefined, LogCategory.AUTH, {
+//             userId: payload.userId,
+//             error: error instanceof Error ? error.message : "Unknown error",
+//         });
+//         throw new Error("Token generation failed");
+//     }
+// };
+
 export const generateJWT = (
     payload: AccessTokenPayload,
     expiresIn: string = config.accessTokenExpiry,
@@ -63,12 +105,15 @@ export const generateJWT = (
 ): string => {
     try {
         const jwtOptions: jwt.SignOptions = {
-            expiresIn,
-            issuer: options.issuer || config.issuer,
-            audience: options.audience || config.audience,
+            expiresIn: asExpiry(expiresIn), // ✅ FIXED
+            issuer: options.issuer ?? config.issuer,
+            audience: options.audience ?? config.audience,
             subject: payload.userId,
             algorithm: "HS256",
-            ...options,
+            notBefore: options.notBefore
+                ? asExpiry(options.notBefore)
+                : undefined,
+            jwtid: options.jwtid,
         };
 
         const token = jwt.sign(payload, config.accessTokenSecret, jwtOptions);
@@ -102,7 +147,7 @@ export const generateRefreshToken = (
 ): string => {
     try {
         const jwtOptions: jwt.SignOptions = {
-            expiresIn,
+            expiresIn: asExpiry(expiresIn),
             issuer: config.issuer,
             audience: config.audience,
             subject: payload.userId,
@@ -450,11 +495,13 @@ export const verifyEmailVerificationToken = (token: string) => {
  * @param expiresIn - Expiration time (default: 1 year)
  * @returns API key JWT
  */
+
+type StringValue = `${number}${"s" | "m" | "h" | "d" | "w" | "y"}`;
 export const generateAPIKey = (
     userId: string,
     type: "internal" | "ecommerce",
     permissions: string[] = [],
-    expiresIn: string = "1y"
+    expiresIn: StringValue = "1y"
 ): string => {
     const payload = {
         userId,

@@ -176,22 +176,22 @@ model Address {
 
 
 model EcommerceUserSession {
-  id           String   @id @default(cuid())
-  userId       String
-  sessionToken String   @unique
-  refreshToken String   @unique
-  expiresAt    DateTime
-  deviceInfo   Json?    // {type: 'mobile|desktop', os, browser, version}
-  ipAddress    String?
-  userAgent    String?
-  isActive     Boolean  @default(true)
+  id                    String   @id @default(cuid())
+  ecommerceUserId       String
+  sessionToken          String   @unique
+  refreshToken          String   @unique
+  expiresAt             DateTime
+  deviceInfo            Json?    // {type: 'mobile|desktop', os, browser, version}
+  ipAddress             String?
+  userAgent             String?
+  isActive              Boolean  @default(true)
   
-  ecommerceUser EcommerceUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ecommerceUser         EcommerceUser @relation(fields: [ecommerceUserId], references: [id], onDelete: Cascade)
   
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  @@index([userId])
+  @@index([ecommerceUserId])
   @@index([sessionToken])
   @@map("ecommerce_user_sessions")
 }

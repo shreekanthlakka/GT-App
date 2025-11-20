@@ -74,8 +74,8 @@ export const checkCreditLimit = async (
         outstandingSales._sum.remainingAmount || 0
     );
     const creditLimit = Number(customer.creditLimit);
-    const totalWithNewAmount = currentOutstanding + additionalAmount; // Works!
-    const availableCredit = creditLimit - currentOutstanding; // Works!
+    const totalWithNewAmount = currentOutstanding + additionalAmount;
+    const availableCredit = creditLimit - currentOutstanding;
 
     return {
         exceeded: totalWithNewAmount > Number(customer.creditLimit),
@@ -88,16 +88,16 @@ export const checkCreditLimit = async (
 /**
  * Update stock levels after sale/return
  */
-export const updateProductStock = async (
-    productId: string,
+export const updateInventoryItemStock = async (
+    inventoryItemId: string,
     quantity: number,
     operation: "REDUCE" | "ADD",
     userId: string,
     reference?: string
 ): Promise<void> => {
-    const product = await prisma.product.findUnique({
-        where: { id: productId },
-        select: { stock: true, name: true },
+    const product = await prisma.inventoryItem.findUnique({
+        where: { id: inventoryItemId },
+        select: { currentStock: true, name: true },
     });
 
     if (!product) {
@@ -106,26 +106,26 @@ export const updateProductStock = async (
 
     const newStock =
         operation === "REDUCE"
-            ? product.stock - quantity
-            : product.stock + quantity;
+            ? product.currentStock - quantity
+            : product.currentStock + quantity;
 
     if (newStock < 0) {
         throw new Error(`Insufficient stock for ${product.name}`);
     }
 
     // Update product stock
-    await prisma.product.update({
-        where: { id: productId },
-        data: { stock: newStock },
+    await prisma.inventoryItem.update({
+        where: { id: inventoryItemId },
+        data: { currentStock: newStock },
     });
 
     // Create stock movement record
     await prisma.stockMovement.create({
         data: {
-            productId,
+            inventoryItemId,
             type: operation === "REDUCE" ? "OUT" : "IN",
             quantity: operation === "REDUCE" ? -quantity : quantity,
-            previousStock: product.stock,
+            previousStock: product.currentStock,
             newStock,
             reason: operation === "REDUCE" ? "Sale" : "Return",
             reference,
@@ -138,7 +138,7 @@ export const updateProductStock = async (
  * Generate sequential number for vouchers
  */
 export const getNextSequenceNumber = async (
-    type: "SALE" | "INVOICE" | "PAYMENT" | "RECEIPT",
+    type: "SALE" | "INVOICE" | "INVOICE-PAYMENT" | "SALE-RECEIPT",
     userId: string
 ): Promise<number> => {
     // This is a simple implementation. In production, you might want to use Redis or a separate sequence table
@@ -170,8 +170,8 @@ export const getNextSequenceNumber = async (
                 },
             });
             break;
-        case "PAYMENT":
-            count = await prisma.payment.count({
+        case "INVOICE-PAYMENT":
+            count = await prisma.invoicePayment.count({
                 where: {
                     userId,
                     createdAt: {
@@ -181,8 +181,8 @@ export const getNextSequenceNumber = async (
                 },
             });
             break;
-        case "RECEIPT":
-            count = await prisma.receipt.count({
+        case "SALE-RECEIPT":
+            count = await prisma.saleReceipt.count({
                 where: {
                     userId,
                     createdAt: {

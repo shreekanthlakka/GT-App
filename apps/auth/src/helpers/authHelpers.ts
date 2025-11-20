@@ -93,7 +93,7 @@ const extractDeviceInfo = (req: Request) => {
 };
 
 // Helper to create session
-const createUserSession = async (
+const createEcommerceUserSession = async (
     userId: string,
     req: Request,
     rememberMe: boolean = false
@@ -104,7 +104,7 @@ const createUserSession = async (
 
     const session = await prisma.ecommerceUserSession.create({
         data: {
-            userId,
+            ecommerceUserId: userId,
             sessionToken: generateVerificationToken(),
             refreshToken: generateVerificationToken(),
             expiresAt,
@@ -142,5 +142,5 @@ export {
     createSession,
     handleFailedLogin,
     extractDeviceInfo,
-    createUserSession,
+    createEcommerceUserSession,
 };

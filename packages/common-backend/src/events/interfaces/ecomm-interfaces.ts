@@ -304,8 +304,8 @@ export interface EcommerceUserLoggedInEvent extends BaseEvent {
         rememberMe: boolean;
 
         // Device and location
-        deviceInfo: {
-            type: "mobile" | "desktop" | "tablet";
+        deviceInfo?: {
+            type?: "mobile" | "desktop" | "tablet";
             os?: string;
             browser?: string;
             version?: string;

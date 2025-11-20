@@ -1,6 +1,6 @@
 // apps/accounts-web/src/features/sales/api/sales.api.ts
 
-import { saleService as apiClient } from "@/shared/utils/api-client";
+import { salesService as apiClient } from "@/shared/utils/api-client";
 import type {
     CreateSaleType,
     UpdateSaleType,
