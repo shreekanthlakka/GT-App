@@ -18,7 +18,6 @@ export class SaleReceiptCreatedPublisher extends KafkaPublisher<SaleReceiptCreat
         return `${data.customerId}_${data.receiptNo}`;
     }
 }
-Reddy;
 
 export class SaleReceiptUpdatedPublisher extends KafkaPublisher<SaleReceiptUpdatedEvent> {
     subject = Subjects.SaleReceiptUpdated as const;

@@ -1,22 +1,11 @@
-import {
-    PrismaClient,
-    NotificationType,
-    OCRStatus,
+export { prisma } from "./client";
+// export * from "@prisma/client";
+export type {
+    EcommerceUserSession,
     InvoiceStatus,
+    LedgerEntry,
+    LedgerType,
+    SaleStatus,
 } from "./generated/prisma";
 
-export * from "./generated/prisma";
-
-const globalForPrisma = globalThis as unknown as {
-    prisma: PrismaClient | undefined;
-};
-
-export const prisma =
-    globalForPrisma.prisma ??
-    new PrismaClient({
-        log: ["query", "error", "warn"],
-    });
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
-export { NotificationType, OCRStatus, InvoiceStatus };
+export type { Prisma } from "./generated/prisma";

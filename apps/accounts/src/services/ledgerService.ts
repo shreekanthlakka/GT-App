@@ -383,7 +383,7 @@ export class LedgerService {
 
         // Calculate running balances for display
         let runningBalance = 0;
-        const entriesWithBalance = entries.map((entry) => {
+        const entriesWithBalance = entries.map((entry: any) => {
             runningBalance += Number(entry.debit) - Number(entry.credit);
             return {
                 ...entry,
@@ -393,11 +393,11 @@ export class LedgerService {
 
         // Calculate totals
         const totalDebit = entries.reduce(
-            (sum, entry) => sum + Number(entry.debit),
+            (sum: number, entry: any) => sum + Number(entry.debit),
             0
         );
         const totalCredit = entries.reduce(
-            (sum, entry) => sum + Number(entry.credit),
+            (sum: number, entry: any) => sum + Number(entry.credit),
             0
         );
 
@@ -442,7 +442,7 @@ export class LedgerService {
 
         // Calculate running balances for display
         let runningBalance = 0;
-        const entriesWithBalance = entries.map((entry) => {
+        const entriesWithBalance = entries.map((entry: (typeof entries)[0]) => {
             runningBalance += Number(entry.credit) - Number(entry.debit);
             return {
                 ...entry,
@@ -452,11 +452,11 @@ export class LedgerService {
 
         // Calculate totals
         const totalDebit = entries.reduce(
-            (sum, entry) => sum + Number(entry.debit),
+            (sum: number, entry: any) => sum + Number(entry.debit),
             0
         );
         const totalCredit = entries.reduce(
-            (sum, entry) => sum + Number(entry.credit),
+            (sum: number, entry: any) => sum + Number(entry.credit),
             0
         );
 

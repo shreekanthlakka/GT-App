@@ -16,6 +16,7 @@ import {
 import { kafkaWrapper } from "@repo/common-backend/kafka";
 import { LedgerService } from "../services/ledgerService";
 import { SendEmailRequestPublisher } from "@repo/common-backend/publisher";
+import { Prisma } from "@repo/db";
 
 export const createSaleReceipt = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -117,78 +118,82 @@ export const createSaleReceipt = asyncHandler(async (req, res) => {
     const receiptDate = date ? new Date(date) : new Date();
 
     // Create receipt transaction
-    const receipt = await prisma.$transaction(async (tx) => {
-        // Create receipt record
-        const newReceipt = await tx.saleReceipt.create({
-            data: {
-                voucherId,
-                receiptNo,
-                date: receiptDate,
-                amount: Number(amount),
-                method,
-                description: description || `Payment from ${customer.name}`,
-                reference,
-                imageUrl,
-                bankName,
-                chequeNo,
-                chequeDate: chequeDate ? new Date(chequeDate) : null,
-                clearanceDate: clearanceDate ? new Date(clearanceDate) : null,
-                charges: Number(charges),
-                customerId,
-                saleId,
-                userId,
-            },
-            include: {
-                customer: {
-                    select: { name: true, phone: true, email: true },
+    const receipt = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+            // Create receipt record
+            const newReceipt = await tx.saleReceipt.create({
+                data: {
+                    voucherId,
+                    receiptNo,
+                    date: receiptDate,
+                    amount: Number(amount),
+                    method,
+                    description: description || `Payment from ${customer.name}`,
+                    reference,
+                    imageUrl,
+                    bankName,
+                    chequeNo,
+                    chequeDate: chequeDate ? new Date(chequeDate) : null,
+                    clearanceDate: clearanceDate
+                        ? new Date(clearanceDate)
+                        : null,
+                    charges: Number(charges),
+                    customerId,
+                    saleId,
+                    userId,
                 },
-                sale: {
-                    select: {
-                        saleNo: true,
-                        voucherId: true,
-                        amount: true,
-                        remainingAmount: true,
+                include: {
+                    customer: {
+                        select: { name: true, phone: true, email: true },
+                    },
+                    sale: {
+                        select: {
+                            saleNo: true,
+                            voucherId: true,
+                            amount: true,
+                            remainingAmount: true,
+                        },
                     },
                 },
-            },
-        });
+            });
 
-        // Update sale if allocated
-        if (saleId && sale) {
-            const newPaidAmount = Number(sale.paidAmount) + Number(amount);
-            const newRemainingAmount = Number(sale.amount) - newPaidAmount;
+            // Update sale if allocated
+            if (saleId && sale) {
+                const newPaidAmount = Number(sale.paidAmount) + Number(amount);
+                const newRemainingAmount = Number(sale.amount) - newPaidAmount;
 
-            // Determine new status
-            let newStatus = sale.status;
-            if (newRemainingAmount <= 0) {
-                newStatus = "PAID";
-            } else if (newPaidAmount > 0) {
-                newStatus = "PARTIALLY_PAID";
+                // Determine new status
+                let newStatus = sale.status;
+                if (newRemainingAmount <= 0) {
+                    newStatus = "PAID";
+                } else if (newPaidAmount > 0) {
+                    newStatus = "PARTIALLY_PAID";
+                }
+
+                await tx.sale.update({
+                    where: { id: saleId },
+                    data: {
+                        paidAmount: newPaidAmount,
+                        remainingAmount: Math.max(0, newRemainingAmount),
+                        status: newStatus,
+                        updatedAt: new Date(),
+                    },
+                });
             }
 
-            await tx.sale.update({
-                where: { id: saleId },
-                data: {
-                    paidAmount: newPaidAmount,
-                    remainingAmount: Math.max(0, newRemainingAmount),
-                    status: newStatus,
-                    updatedAt: new Date(),
-                },
+            // Create ledger entry - Customer pays us (Credit)
+            await LedgerService.createPaymentReceivedEntry({
+                paymentId: newReceipt.id,
+                customerId,
+                amount: Number(amount),
+                description: `Receipt ${receiptNo} - ${customer.name}${saleId ? ` (Sale: ${sale?.saleNo})` : ""}`,
+                userId,
+                date: receiptDate,
             });
+
+            return newReceipt;
         }
-
-        // Create ledger entry - Customer pays us (Credit)
-        await LedgerService.createPaymentReceivedEntry({
-            paymentId: newReceipt.id,
-            customerId,
-            amount: Number(amount),
-            description: `Receipt ${receiptNo} - ${customer.name}${saleId ? ` (Sale: ${sale?.saleNo})` : ""}`,
-            userId,
-            date: receiptDate,
-        });
-
-        return newReceipt;
-    });
+    );
 
     // Audit log
     logger.audit("CREATE", "SaleReceipt", receipt.id, userId, null, receipt, {
@@ -399,7 +404,7 @@ export const getSaleReceipts = asyncHandler(async (req, res) => {
                         ? Number(summary._sum.amount) / summary._count
                         : 0,
             },
-            methodBreakdown: methodBreakdown.map((mb) => ({
+            methodBreakdown: methodBreakdown.map((mb: any) => ({
                 method: mb.method,
                 amount: mb._sum.amount || 0,
                 count: mb._count,
@@ -553,63 +558,69 @@ export const updateSaleReceipt = asyncHandler(async (req, res) => {
     }
 
     // Update receipt in transaction
-    const updatedReceipt = await prisma.$transaction(async (tx) => {
-        // Update receipt record
-        const updated = await tx.saleReceipt.update({
-            where: { id },
-            data: {
-                ...updateData,
-                updatedAt: new Date(),
-            },
-            include: {
-                customer: {
-                    select: { name: true, phone: true, email: true },
-                },
-                sale: {
-                    select: { saleNo: true, amount: true, paidAmount: true },
-                },
-            },
-        });
-
-        // Update sale if amount changed and receipt is allocated
-        if (needsAdjustment && existingReceipt.saleId) {
-            const newPaidAmount =
-                Number(existingReceipt.sale!.paidAmount) + amountDifference;
-            const newRemainingAmount =
-                Number(existingReceipt.sale!.amount) - newPaidAmount;
-
-            // Determine new status
-            let newStatus = "PENDING";
-            if (newRemainingAmount <= 0) {
-                newStatus = "PAID";
-            } else if (newPaidAmount > 0) {
-                newStatus = "PARTIALLY_PAID";
-            }
-
-            await tx.sale.update({
-                where: { id: existingReceipt.saleId },
+    const updatedReceipt = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+            // Update receipt record
+            const updated = await tx.saleReceipt.update({
+                where: { id },
                 data: {
-                    paidAmount: newPaidAmount,
-                    remainingAmount: Math.max(0, newRemainingAmount),
-                    status: newStatus as any,
+                    ...updateData,
                     updatedAt: new Date(),
                 },
+                include: {
+                    customer: {
+                        select: { name: true, phone: true, email: true },
+                    },
+                    sale: {
+                        select: {
+                            saleNo: true,
+                            amount: true,
+                            paidAmount: true,
+                        },
+                    },
+                },
             });
-        }
 
-        // Create ledger adjustment if amount changed
-        if (needsAdjustment) {
-            await LedgerService.createAdjustmentEntry({
-                customerId: existingReceipt.customerId,
-                amount: -amountDifference, // Negative because this is a credit adjustment
-                description: `Receipt ${existingReceipt.receiptNo} amount adjustment`,
-                reason: `Updated from ${existingReceipt.amount} to ${updateData.amount}`,
-                userId,
-            });
-        }
+            // Update sale if amount changed and receipt is allocated
+            if (needsAdjustment && existingReceipt.saleId) {
+                const newPaidAmount =
+                    Number(existingReceipt.sale!.paidAmount) + amountDifference;
+                const newRemainingAmount =
+                    Number(existingReceipt.sale!.amount) - newPaidAmount;
 
-        return updated;
-    });
+                // Determine new status
+                let newStatus = "PENDING";
+                if (newRemainingAmount <= 0) {
+                    newStatus = "PAID";
+                } else if (newPaidAmount > 0) {
+                    newStatus = "PARTIALLY_PAID";
+                }
+
+                await tx.sale.update({
+                    where: { id: existingReceipt.saleId },
+                    data: {
+                        paidAmount: newPaidAmount,
+                        remainingAmount: Math.max(0, newRemainingAmount),
+                        status: newStatus as any,
+                        updatedAt: new Date(),
+                    },
+                });
+            }
+
+            // Create ledger adjustment if amount changed
+            if (needsAdjustment) {
+                await LedgerService.createAdjustmentEntry({
+                    customerId: existingReceipt.customerId,
+                    amount: -amountDifference, // Negative because this is a credit adjustment
+                    description: `Receipt ${existingReceipt.receiptNo} amount adjustment`,
+                    reason: `Updated from ${existingReceipt.amount} to ${updateData.amount}`,
+                    userId,
+                });
+            }
+
+            return updated;
+        }
+    );
 
     // Calculate changes for event
     const changes: Record<string, { oldValue: any; newValue: any }> = {};
@@ -713,7 +724,7 @@ export const deleteSaleReceipt = asyncHandler(async (req, res) => {
     }
 
     // Delete receipt in transaction
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // Update sale if receipt was allocated
         if (receipt.saleId) {
             const newPaidAmount =
@@ -966,17 +977,19 @@ export const getSaleReceiptAnalytics = asyncHandler(async (req, res) => {
                 collectionEfficiency:
                     Math.round(collectionEfficiency * 100) / 100,
             },
-            methodBreakdown: methodBreakdown.map((mb) => ({
-                method: mb.method,
-                amount: mb._sum.amount || 0,
-                count: mb._count,
-                percentage: receiptsStats._sum.amount
-                    ? ((mb._sum.amount || 0) /
-                          Number(receiptsStats._sum.amount)) *
-                      100
-                    : 0,
-            })),
-            dailyTrends: dailyTrends.map((trend) => ({
+            methodBreakdown: methodBreakdown.map(
+                (mb: (typeof methodBreakdown)[0]) => ({
+                    method: mb.method,
+                    amount: mb._sum.amount || 0,
+                    count: mb._count,
+                    percentage: receiptsStats._sum.amount
+                        ? ((mb._sum.amount || 0) /
+                              Number(receiptsStats._sum.amount)) *
+                          100
+                        : 0,
+                })
+            ),
+            dailyTrends: dailyTrends.map((trend: (typeof dailyTrends)[0]) => ({
                 date: trend.date.toISOString().split("T")[0],
                 amount: trend._sum.amount || 0,
                 count: trend._count,
@@ -984,21 +997,24 @@ export const getSaleReceiptAnalytics = asyncHandler(async (req, res) => {
             pendingCheques: {
                 count: pendingCheques.length,
                 totalAmount: pendingCheques.reduce(
-                    (sum, cheque) => sum + Number(cheque.amount),
+                    (sum: number, cheque: (typeof pendingCheques)[0]) =>
+                        sum + Number(cheque.amount),
                     0
                 ),
-                details: pendingCheques.map((cheque) => ({
-                    id: cheque.id,
-                    receiptNo: cheque.receiptNo,
-                    customerName: cheque.customer.name,
-                    amount: Number(cheque.amount),
-                    chequeNo: cheque.chequeNo,
-                    chequeDate: cheque.chequeDate,
-                    daysOutstanding: Math.floor(
-                        (new Date().getTime() - cheque.date.getTime()) /
-                            (1000 * 60 * 60 * 24)
-                    ),
-                })),
+                details: pendingCheques.map(
+                    (cheque: (typeof pendingCheques)[0]) => ({
+                        id: cheque.id,
+                        receiptNo: cheque.receiptNo,
+                        customerName: cheque.customer.name,
+                        amount: Number(cheque.amount),
+                        chequeNo: cheque.chequeNo,
+                        chequeDate: cheque.chequeDate,
+                        daysOutstanding: Math.floor(
+                            (new Date().getTime() - cheque.date.getTime()) /
+                                (1000 * 60 * 60 * 24)
+                        ),
+                    })
+                ),
             },
         }
     );

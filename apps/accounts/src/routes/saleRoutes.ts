@@ -10,7 +10,7 @@ import {
     getSalesSummary,
     getSalesAnalytics,
     getSalesPerformance,
-} from "../controllers/salesController";
+} from "../controllers/saleController";
 import { authenticate } from "@repo/common-backend/middleware";
 import {
     validateCreateSale,

@@ -14,6 +14,12 @@ import {
 import { kafkaWrapper } from "@repo/common-backend/kafka";
 import { LedgerService } from "../services/ledgerService";
 
+/**
+ * ==============================================================================================
+ *   ##############  Create a new party ############
+ * ==============================================================================================
+ */
+
 export const createParty = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     if (!userId) return;
@@ -142,6 +148,13 @@ export const createParty = asyncHandler(async (req, res) => {
     res.status(response.statusCode).json(response);
 });
 
+/**
+ * ============================================================================================
+ *   ##############  Get all parties with filtering, sorting, and pagination ############
+ * ============================================================================================
+ *
+ */
+
 export const getParties = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     const {
@@ -208,7 +221,7 @@ export const getParties = asyncHandler(async (req, res) => {
 
     // Get balances for each party
     const partiesWithBalances = await Promise.all(
-        parties.map(async (party) => {
+        parties.map(async (party: (typeof parties)[0]) => {
             const balance = await LedgerService.getPartyBalance(party.id);
             return {
                 ...party,
@@ -231,6 +244,20 @@ export const getParties = asyncHandler(async (req, res) => {
     });
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ==========================================================================================
+ *    ##################################  Get party by ID  #################################
+ * @route GET /api/parties/:id
+ * @access Private
+ * @param {string} id - Party ID
+ * @returns {Party} - Party details
+ * @throws {CustomError} - If party not found
+ * @example
+ * GET /api/parties/1
+ * ==========================================================================================
+ *
+ */
 
 export const getPartyById = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -293,6 +320,21 @@ export const getPartyById = asyncHandler(async (req, res) => {
     });
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ==========================================================================================
+ *    ##################################  Update party  #################################
+ * @route PUT /api/parties/:id
+ * @access Private
+ * @param {string} id - Party ID
+ * @param {Party} partyData - Party data to update
+ * @returns {Party} - Updated party
+ * @throws {CustomError} - If party not found or validation fails
+ * @example
+ * PUT /api/parties/1
+ * ==========================================================================================
+ *
+ */
 
 export const updateParty = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -399,6 +441,13 @@ export const updateParty = asyncHandler(async (req, res) => {
     res.status(response.statusCode).json(response);
 });
 
+/**
+ * =========================================================================================
+ * Delete a party
+ * @route DELETE /api/parties/:id
+ * @access Private
+ * ==========================================================================================
+ */
 export const deleteParty = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     const { id } = req.params;
@@ -492,6 +541,16 @@ export const deleteParty = asyncHandler(async (req, res) => {
     res.status(response.statusCode).json(response);
 });
 
+/**
+ * =========================================================================================
+ *    #########################   Get party ledger ####################################
+ *
+ * /api/v1/parties/:id/ledger
+ * @method GET
+ * @access Private
+ * ==========================================================================================
+ */
+
 export const getPartyLedger = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     const { id } = req.params;
@@ -534,6 +593,12 @@ export const getPartyLedger = asyncHandler(async (req, res) => {
     );
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ===========================================================================================
+ *    #########################   Get party statement ####################################
+ *============================================================================================
+ */
 
 export const getPartyStatement = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -594,8 +659,12 @@ export const getPartyStatement = asyncHandler(async (req, res) => {
             totalPaid: ledgerStatement.totalDebit,
             currentBalance: ledgerStatement.closingBalance,
             overdueAmount: outstandingInvoices
-                .filter((inv) => inv.status === "OVERDUE")
-                .reduce((sum, inv) => sum + Number(inv.remainingAmount), 0),
+                .filter((inv: any) => inv.status === "OVERDUE")
+                .reduce(
+                    (sum: number, inv: any) =>
+                        sum + Number(inv.remainingAmount),
+                    0
+                ),
         },
     };
 
@@ -609,6 +678,12 @@ export const getPartyStatement = asyncHandler(async (req, res) => {
     res.status(response.statusCode).json(response);
 });
 
+/**
+ * =========================================================================================
+ *    #########################   Get party analytics ####################################
+ *============================================================================================
+ *
+ */
 export const getPartyAnalytics = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     const { startDate, endDate, partyId } = req.query;
@@ -655,14 +730,14 @@ export const getPartyAnalytics = asyncHandler(async (req, res) => {
     ]);
 
     // Get party details for top parties
-    const partyIds = topParties.map((tp) => tp.partyId);
+    const partyIds = topParties.map((tp: any) => tp.partyId);
     const parties = await prisma.party.findMany({
         where: { id: { in: partyIds } },
         select: { id: true, name: true, category: true, city: true },
     });
 
-    const topPartiesWithDetails = topParties.map((tp) => {
-        const party = parties.find((p) => p.id === tp.partyId);
+    const topPartiesWithDetails = topParties.map((tp: any) => {
+        const party = parties.find((p: any) => p.id === tp.partyId);
         return {
             partyId: tp.partyId,
             partyName: party?.name || "Unknown",
@@ -695,7 +770,7 @@ export const getPartyAnalytics = asyncHandler(async (req, res) => {
     });
 
     const categoryBreakdown = categoryStats.reduce(
-        (acc: Record<string, number>, party) => {
+        (acc: Record<string, number>, party: any) => {
             const category = party.category || "Uncategorized";
             acc[category] = (acc[category] || 0) + 1;
             return acc;
@@ -735,6 +810,21 @@ export const getPartyAnalytics = asyncHandler(async (req, res) => {
     );
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ==========================================================================================
+ * Get party performance analytics
+ * @route GET /api/parties/:id/performance
+ * @access Private
+ * @param {string} id - Party ID
+ * @param {number} months - Number of months to analyze (default: 6)
+ * @returns {object} - Party performance analytics
+ * @throws {CustomError} - If party not found or unauthorized
+ * @example
+ * GET /api/parties/123/performance?months=12
+ * ==========================================================================================
+ *
+ */
 
 export const getPartyPerformance = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -805,7 +895,7 @@ export const getPartyPerformance = asyncHandler(async (req, res) => {
     });
 
     const paymentTimeliness = paidInvoices
-        .map((invoice) => {
+        .map((invoice: (typeof paidInvoices)[0]) => {
             const paymentDate = invoice.invoicePayments[0]?.date;
             if (!paymentDate || !invoice.dueDate) return null;
 
@@ -824,7 +914,9 @@ export const getPartyPerformance = asyncHandler(async (req, res) => {
         })
         .filter(Boolean);
 
-    const onTimePayments = paymentTimeliness.filter((p) => p!.onTime).length;
+    const onTimePayments = paymentTimeliness.filter(
+        (p: (typeof paymentTimeliness)[0]) => p!.onTime
+    ).length;
     const onTimeRate =
         paymentTimeliness.length > 0
             ? (onTimePayments / paymentTimeliness.length) * 100
@@ -841,7 +933,7 @@ export const getPartyPerformance = asyncHandler(async (req, res) => {
         }
     > = {};
 
-    invoiceTrends.forEach((invoice) => {
+    invoiceTrends.forEach((invoice: (typeof invoiceTrends)[0]) => {
         const monthKey = invoice.date.toISOString().substring(0, 7); // YYYY-MM
         if (!monthlyData[monthKey]) {
             monthlyData[monthKey] = {
@@ -855,7 +947,7 @@ export const getPartyPerformance = asyncHandler(async (req, res) => {
         monthlyData[monthKey].invoiceAmount += Number(invoice.amount);
     });
 
-    paymentTrends.forEach((payment) => {
+    paymentTrends.forEach((payment: (typeof paymentTrends)[0]) => {
         const monthKey = payment.date.toISOString().substring(0, 7);
         if (!monthlyData[monthKey]) {
             monthlyData[monthKey] = {
@@ -900,7 +992,10 @@ export const getPartyPerformance = asyncHandler(async (req, res) => {
                     paymentTimeliness.length > 0
                         ? Math.round(
                               paymentTimeliness.reduce(
-                                  (sum, p) => sum + (p?.daysDifference || 0),
+                                  (
+                                      sum: number,
+                                      p: (typeof paymentTimeliness)[0]
+                                  ) => sum + (p?.daysDifference || 0),
                                   0
                               ) / paymentTimeliness.length
                           )
@@ -912,6 +1007,23 @@ export const getPartyPerformance = asyncHandler(async (req, res) => {
     );
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ==============================================================================================
+ *         #################### Get party comparison data #################################
+ * @route GET /api/parties/comparison
+ * @access Private
+ * @description Get comparison data for multiple parties
+ * @param {string[]} partyIds - Array of party IDs to compare
+ * @param {string} [startDate] - Start date for comparison (default: first day of current month)
+ * @param {string} [endDate] - End date for comparison (default: today)
+ * @param {string} [metric] - Metric to compare (amount, count, or average)
+ * @returns {object} Comparison data for each party
+ * @example
+ * GET /api/parties/comparison?partyIds[]=1&partyIds[]=2&startDate=2023-01-01&endDate=2023-12-31&metric=amount
+ * ==================================================================================================
+ *
+ */
 
 export const getPartyComparison = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -947,7 +1059,7 @@ export const getPartyComparison = asyncHandler(async (req, res) => {
 
     // Get comparison data for each party
     const comparisonData = await Promise.all(
-        parties.map(async (party) => {
+        parties.map(async (party: (typeof parties)[0]) => {
             const [invoiceStats, paymentStats] = await Promise.all([
                 prisma.invoice.aggregate({
                     where: {

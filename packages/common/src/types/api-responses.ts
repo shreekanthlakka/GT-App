@@ -90,7 +90,7 @@
 //     | "DELIVERED"
 //     | "CANCELLED"
 //     | "RETURNED";
-// export type StockMovementType = "IN" | "OUT" | "ADJUSTMENT";
+// export type StockMovementEnumType = "IN" | "OUT" | "ADJUSTMENT";
 // export type Gender = "MALE" | "FEMALE" | "OTHER";
 
 // // ============================================
@@ -1546,7 +1546,7 @@ export type OrderStatus =
     | "CANCELLED"
     | "RETURNED";
 
-export type StockMovementType = "IN" | "OUT" | "ADJUSTMENT";
+export type StockMovementEnumType = "IN" | "OUT" | "ADJUSTMENT";
 
 export type ReferenceType =
     | "SALE"
@@ -2502,7 +2502,7 @@ export interface StockMovement {
     id: string;
     inventoryItemId: string;
     inventoryItem?: InventoryItem;
-    type: StockMovementType;
+    type: StockMovementEnumType;
     quantity: number;
     previousQuantity: number;
     newQuantity: number;
@@ -2985,7 +2985,7 @@ export interface InventoryFilters extends PaginationParams {
 
 export interface StockMovementFilters extends PaginationParams {
     inventoryItemId?: string;
-    type?: StockMovementType;
+    type?: StockMovementEnumType;
     startDate?: string;
     endDate?: string;
 }

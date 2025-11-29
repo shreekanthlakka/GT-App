@@ -1,4 +1,4 @@
-import { InvoiceStatus, prisma } from "@repo/db/prisma";
+import { InvoiceStatus, prisma } from "@repo/db";
 import {
     asyncHandler,
     CustomError,
@@ -915,24 +915,28 @@ export const getPaymentAnalytics = asyncHandler(async (req, res) => {
         ]);
 
     // Get party details
-    const partyIds = topParties.map((tp) => tp.partyId);
+    const partyIds = topParties.map((tp: any) => tp.partyId);
     const parties = await prisma.party.findMany({
         where: { id: { in: partyIds } },
         select: { id: true, name: true, category: true },
     });
 
-    const topPartiesWithDetails = topParties.map((tp) => {
-        const party = parties.find((p) => p.id === tp.partyId);
-        return {
-            partyId: tp.partyId,
-            partyName: party?.name || "Unknown",
-            category: party?.category,
-            totalPayments: tp._sum.amount || 0,
-            paymentCount: tp._count,
-            averagePayment:
-                tp._count > 0 ? Number(tp._sum.amount || 0) / tp._count : 0,
-        };
-    });
+    const topPartiesWithDetails = topParties.map(
+        (tp: (typeof topParties)[0]) => {
+            const party = parties.find(
+                (p: (typeof parties)[0]) => p.id === tp.partyId
+            );
+            return {
+                partyId: tp.partyId,
+                partyName: party?.name || "Unknown",
+                category: party?.category,
+                totalPayments: tp._sum.amount || 0,
+                paymentCount: tp._count,
+                averagePayment:
+                    tp._count > 0 ? Number(tp._sum.amount || 0) / tp._count : 0,
+            };
+        }
+    );
 
     // Daily payment trends
     const dailyPayments = await prisma.invoicePayment.findMany({
@@ -945,7 +949,7 @@ export const getPaymentAnalytics = asyncHandler(async (req, res) => {
         string,
         { date: string; amount: number; count: number }
     > = {};
-    dailyPayments.forEach((payment) => {
+    dailyPayments.forEach((payment: (typeof dailyPayments)[0]) => {
         const dateKey = payment.date.toISOString().substring(0, 10);
         if (!dailyTrends[dateKey]) {
             dailyTrends[dateKey] = { date: dateKey, amount: 0, count: 0 };
@@ -988,7 +992,7 @@ export const getPaymentAnalytics = asyncHandler(async (req, res) => {
                         : 0,
             },
             statusBreakdown,
-            methodBreakdown: methodBreakdown.map((mb) => ({
+            methodBreakdown: methodBreakdown.map((mb: any) => ({
                 method: mb.method,
                 amount: mb._sum.amount || 0,
                 count: mb._count,
@@ -1065,7 +1069,7 @@ export const getCashFlowAnalysis = asyncHandler(async (req, res) => {
     > = {};
 
     // Process payments (money going out)
-    monthlyPayments.forEach((payment) => {
+    monthlyPayments.forEach((payment: (typeof monthlyPayments)[0]) => {
         const monthKey = payment.date.toISOString().substring(0, 7); // YYYY-MM
         if (!monthlyData[monthKey]) {
             monthlyData[monthKey] = {
@@ -1086,7 +1090,7 @@ export const getCashFlowAnalysis = asyncHandler(async (req, res) => {
     });
 
     // Process receipts (money coming in)
-    monthlyReceipts.forEach((receipt) => {
+    monthlyReceipts.forEach((receipt: (typeof monthlyReceipts)[0]) => {
         const monthKey = receipt.date.toISOString().substring(0, 7);
         if (!monthlyData[monthKey]) {
             monthlyData[monthKey] = {

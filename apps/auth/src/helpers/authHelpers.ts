@@ -4,7 +4,7 @@ import { Request, Response } from "express";
 import { generateVerificationToken } from "@repo/common-backend/utils";
 import { kafkaWrapper } from "@repo/common-backend/kafka";
 import { EcommerceUserSessionCreatedPublisher } from "../events/publishers/ecommAuthPublishers";
-import type { EcommerceUserSession } from "@repo/db/prisma";
+import type { EcommerceUserSession } from "@repo/db";
 
 const generateTokens = async (
     user: any

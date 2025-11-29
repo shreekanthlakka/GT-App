@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db/prisma";
+import { prisma } from "@repo/db";
 import {
     asyncHandler,
     CustomError,
@@ -12,6 +12,12 @@ import {
 } from "../events/publishers/customerPublishers";
 import { kafkaWrapper } from "@repo/common-backend/kafka";
 import { LedgerService } from "../services/ledgerService";
+
+/**
+ * ===========================================================================================
+ *            ######################    CREATE CUSTOMERS    ##############################
+ * ===========================================================================================
+ */
 
 export const createCustomer = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -147,6 +153,12 @@ export const createCustomer = asyncHandler(async (req, res) => {
     res.status(response.statusCode).json(response);
 });
 
+/**
+ * ===========================================================================================
+ *            ######################    GET CUSTOMERS    ##############################
+ * ===========================================================================================
+ */
+
 export const getCustomers = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     const {
@@ -216,7 +228,7 @@ export const getCustomers = asyncHandler(async (req, res) => {
 
     // Get balances for each customer
     const customersWithBalances = await Promise.all(
-        customers.map(async (customer) => {
+        customers.map(async (customer: (typeof customers)[0]) => {
             const balance = await LedgerService.getCustomerBalance(customer.id);
             return {
                 ...customer,
@@ -257,6 +269,12 @@ export const getCustomers = asyncHandler(async (req, res) => {
     );
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ===========================================================================================
+ *        ######################    GET CUSTOMER BY ID   ##############################
+ * ===========================================================================================
+ */
 
 export const getCustomerById = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -324,6 +342,12 @@ export const getCustomerById = asyncHandler(async (req, res) => {
     );
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ===========================================================================================
+ *        ######################    UPDATE CUSTOMER    ##############################
+ * ===========================================================================================
+ */
 
 export const updateCustomer = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -455,6 +479,12 @@ export const updateCustomer = asyncHandler(async (req, res) => {
     res.status(response.statusCode).json(response);
 });
 
+/**
+ * ===========================================================================================
+ *         ######################    DELETE CUSTOMER    ##############################
+ * ===========================================================================================
+ */
+
 export const deleteCustomer = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     const { id } = req.params;
@@ -550,6 +580,12 @@ export const deleteCustomer = asyncHandler(async (req, res) => {
     res.status(response.statusCode).json(response);
 });
 
+/**
+ * ===========================================================================================
+ *     ######################    GET CUSTOMER LEDGER    ##############################
+ * ===========================================================================================
+ */
+
 export const getCustomerLedger = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
     const { id } = req.params;
@@ -592,6 +628,12 @@ export const getCustomerLedger = asyncHandler(async (req, res) => {
     );
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ===========================================================================================
+ *       ######################    GET CUSTOMER STATEMENT    ##############################
+ * ===========================================================================================
+ */
 
 export const getCustomerStatement = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -653,8 +695,15 @@ export const getCustomerStatement = asyncHandler(async (req, res) => {
             totalPayments: ledgerStatement.totalCredit,
             currentBalance: ledgerStatement.closingBalance,
             overdueAmount: outstandingSales
-                .filter((sale) => sale.status === "OVERDUE")
-                .reduce((sum, sale) => sum + Number(sale.remainingAmount), 0),
+                .filter(
+                    (sale: (typeof outstandingSales)[0]) =>
+                        sale.status === "OVERDUE"
+                )
+                .reduce(
+                    (sum: number, sale: (typeof outstandingSales)[0]) =>
+                        sum + Number(sale.remainingAmount),
+                    0
+                ),
         },
     };
 
@@ -667,6 +716,12 @@ export const getCustomerStatement = asyncHandler(async (req, res) => {
     );
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ===========================================================================================
+ *        ######################    GET CUSTOMER ANALYTICS    ##########################
+ * ===========================================================================================
+ */
 
 export const getCustomerAnalytics = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -753,34 +808,40 @@ export const getCustomerAnalytics = asyncHandler(async (req, res) => {
         ]);
 
     // Get customer details
-    const customerIds = topCustomers.map((tc) => tc.customerId);
+    const customerIds = topCustomers.map(
+        (tc: (typeof topCustomers)[0]) => tc.customerId
+    );
     const customers = await prisma.customer.findMany({
         where: { id: { in: customerIds } },
         select: { id: true, name: true, city: true, tags: true },
     });
 
-    const topCustomersWithDetails = topCustomers.map((tc) => {
-        const customer = customers.find((c) => c.id === tc.customerId);
-        return {
-            customerId: tc.customerId,
-            customerName: customer?.name || "Unknown",
-            city: customer?.city,
-            tags: customer?.tags,
-            totalSales: tc._sum.amount || 0,
-            outstandingAmount: tc._sum.remainingAmount || 0,
-            saleCount: tc._count,
-            collectionRate: tc._sum.amount
-                ? ((Number(tc._sum.amount) -
-                      Number(tc._sum.remainingAmount || 0)) /
-                      Number(tc._sum.amount)) *
-                  100
-                : 0,
-        };
-    });
+    const topCustomersWithDetails = topCustomers.map(
+        (tc: (typeof topCustomers)[0]) => {
+            const customer = customers.find(
+                (c: (typeof customers)[0]) => c.id === tc.customerId
+            );
+            return {
+                customerId: tc.customerId,
+                customerName: customer?.name || "Unknown",
+                city: customer?.city,
+                tags: customer?.tags,
+                totalSales: tc._sum.amount || 0,
+                outstandingAmount: tc._sum.remainingAmount || 0,
+                saleCount: tc._count,
+                collectionRate: tc._sum.amount
+                    ? ((Number(tc._sum.amount) -
+                          Number(tc._sum.remainingAmount || 0)) /
+                          Number(tc._sum.amount)) *
+                      100
+                    : 0,
+            };
+        }
+    );
 
     // Geographic analysis
     const cityBreakdown = customerStats.reduce(
-        (acc: Record<string, number>, customer) => {
+        (acc: Record<string, number>, customer: (typeof customerStats)[0]) => {
             const city = customer.city || "Unknown";
             acc[city] = (acc[city] || 0) + 1;
             return acc;
@@ -812,7 +873,7 @@ export const getCustomerAnalytics = asyncHandler(async (req, res) => {
 
     // Customer acquisition trends
     const acquisitionTrends = customerStats.reduce(
-        (acc: Record<string, number>, customer) => {
+        (acc: Record<string, number>, customer: (typeof customerStats)[0]) => {
             const monthKey = customer.createdAt.toISOString().substring(0, 7); // YYYY-MM
             acc[monthKey] = (acc[monthKey] || 0) + 1;
             return acc;
@@ -861,6 +922,12 @@ export const getCustomerAnalytics = asyncHandler(async (req, res) => {
     );
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ===========================================================================================
+ *            ######################    GET CUSTOMER **    ##############################
+ * ===========================================================================================
+ */
 
 export const getCustomerLifetimeValue = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -917,15 +984,15 @@ export const getCustomerLifetimeValue = asyncHandler(async (req, res) => {
 
     // Calculate lifetime metrics
     const totalSales = salesHistory.reduce(
-        (sum, sale) => sum + Number(sale.amount),
+        (sum: number, sale: any) => sum + Number(sale.amount),
         0
     );
     const totalReceipts = receiptHistory.reduce(
-        (sum, receipt) => sum + Number(receipt.amount),
+        (sum: number, receipt: any) => sum + Number(receipt.amount),
         0
     );
     const totalOutstanding = salesHistory.reduce(
-        (sum, sale) => sum + Number(sale.remainingAmount),
+        (sum: number, sale: any) => sum + Number(sale.remainingAmount),
         0
     );
 
@@ -941,7 +1008,7 @@ export const getCustomerLifetimeValue = asyncHandler(async (req, res) => {
         { sales: number; receipts: number; orders: number }
     > = {};
 
-    salesHistory.forEach((sale) => {
+    salesHistory.forEach((sale: any) => {
         const monthKey = sale.date.toISOString().substring(0, 7);
         if (!monthlyData[monthKey]) {
             monthlyData[monthKey] = { sales: 0, receipts: 0, orders: 0 };
@@ -950,7 +1017,7 @@ export const getCustomerLifetimeValue = asyncHandler(async (req, res) => {
         monthlyData[monthKey].orders += 1;
     });
 
-    receiptHistory.forEach((receipt) => {
+    receiptHistory.forEach((receipt: any) => {
         const monthKey = receipt.date.toISOString().substring(0, 7);
         if (!monthlyData[monthKey]) {
             monthlyData[monthKey] = { sales: 0, receipts: 0, orders: 0 };

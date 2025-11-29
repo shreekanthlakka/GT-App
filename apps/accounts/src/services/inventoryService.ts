@@ -6,6 +6,7 @@ import {
     LowStockAlertPublisher,
 } from "../events/publishers/inventoryPublishers";
 import { kafkaWrapper } from "@repo/common-backend/kafka";
+import { Prisma } from "@repo/db";
 
 export class InventoryService {
     /**
@@ -32,7 +33,7 @@ export class InventoryService {
             );
         }
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // Update stock
             const updatedItem = await tx.inventoryItem.update({
                 where: { id: inventoryItemId },
@@ -106,7 +107,7 @@ export class InventoryService {
             throw new CustomError(404, "Inventory item not found");
         }
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // Update stock
             await tx.inventoryItem.update({
                 where: { id: inventoryItemId },
@@ -198,7 +199,7 @@ export class InventoryService {
             throw new CustomError(404, "Inventory item not found");
         }
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // Update stock and purchase details
             await tx.inventoryItem.update({
                 where: { id: inventoryItemId },

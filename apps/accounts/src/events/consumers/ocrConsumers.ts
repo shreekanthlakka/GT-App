@@ -707,6 +707,7 @@ import {
     generateInvoicePaymentVoucherId,
     generateSaleReceiptVoucherId,
 } from "@repo/common-backend/utils";
+import { Prisma } from "@repo/db";
 
 // ========================================
 // 1. AUTO-CREATE INVOICE WITH INVENTORY (Confidence ≥ 90%)
@@ -1204,34 +1205,36 @@ export class OCRJobCompletedConsumer extends KafkaConsumer<OCRJobCompletedEvent>
                 const newStock = previousStock + item.quantity;
 
                 // Update inventory stock
-                await prisma.$transaction(async (tx) => {
-                    // Update stock
-                    await tx.inventoryItem.update({
-                        where: { id: item.inventoryItemId },
-                        data: {
-                            currentStock: { increment: item.quantity },
-                            lastPurchaseDate: new Date(),
-                            lastPurchasePrice: item.unitPrice,
-                            updatedAt: new Date(),
-                        },
-                    });
+                await prisma.$transaction(
+                    async (tx: Prisma.TransactionClient) => {
+                        // Update stock
+                        await tx.inventoryItem.update({
+                            where: { id: item.inventoryItemId },
+                            data: {
+                                currentStock: { increment: item.quantity },
+                                lastPurchaseDate: new Date(),
+                                lastPurchasePrice: item.unitPrice,
+                                updatedAt: new Date(),
+                            },
+                        });
 
-                    // Create stock movement
-                    await tx.stockMovement.create({
-                        data: {
-                            inventoryItemId: item.inventoryItemId,
-                            type: "IN",
-                            quantity: item.quantity,
-                            previousStock,
-                            newStock,
-                            reason: "Purchase from supplier",
-                            reference: invoiceId,
-                            unitPrice: item.unitPrice,
-                            totalValue: item.unitPrice * item.quantity,
-                            userId,
-                        },
-                    });
-                });
+                        // Create stock movement
+                        await tx.stockMovement.create({
+                            data: {
+                                inventoryItemId: item.inventoryItemId,
+                                type: "IN",
+                                quantity: item.quantity,
+                                previousStock,
+                                newStock,
+                                reason: "Purchase from supplier",
+                                reference: invoiceId,
+                                unitPrice: item.unitPrice,
+                                totalValue: item.unitPrice * item.quantity,
+                                userId,
+                            },
+                        });
+                    }
+                );
 
                 // Publish stock added event
                 const stockAddedPublisher = new StockAddedPublisher(

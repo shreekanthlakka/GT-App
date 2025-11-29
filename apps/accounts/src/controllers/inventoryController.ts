@@ -1,7 +1,7 @@
 // apps/accounts/src/controllers/inventoryController.ts
 
 import { Request, Response } from "express";
-import { prisma } from "@repo/db/prisma";
+import { Prisma, prisma } from "@repo/db";
 import { asyncHandler } from "@repo/common-backend/utils";
 import { CustomError, CustomResponse } from "@repo/common-backend/utils";
 import { logger, LogCategory } from "@repo/common-backend/logger";
@@ -215,77 +215,79 @@ export const createInventoryItem = asyncHandler(
             }
         }
 
-        const item = await prisma.$transaction(async (tx) => {
-            const newItem = await tx.inventoryItem.create({
-                data: {
-                    name: validatedData.name,
-                    description: validatedData.description,
-                    sku: validatedData.sku,
-                    barcode: validatedData.barcode,
-                    category: validatedData.category,
-                    subCategory: validatedData.subCategory,
-                    brand: validatedData.brand,
-                    sellingPrice: new Decimal(validatedData.sellingPrice),
-                    costPrice: validatedData.costPrice
-                        ? new Decimal(validatedData.costPrice)
-                        : null,
-                    mrp: validatedData.mrp
-                        ? new Decimal(validatedData.mrp)
-                        : null,
-                    currentStock: validatedData.currentStock || 0,
-                    minimumStock: validatedData.minimumStock || 0,
-                    maximumStock: validatedData.maximumStock,
-                    reorderLevel: validatedData.reorderLevel,
-                    unit: validatedData.unit || "PCS",
-                    fabric: validatedData.fabric,
-                    gsm: validatedData.gsm,
-                    width: validatedData.width
-                        ? new Decimal(validatedData.width)
-                        : null,
-                    color: validatedData.color,
-                    design: validatedData.design,
-                    pattern: validatedData.pattern,
-                    weaveType: validatedData.weaveType,
-                    images: validatedData.images || [],
-                    attributes: validatedData.attributes || {},
-                    hsnCode: validatedData.hsnCode,
-                    taxRate: validatedData.taxRate
-                        ? new Decimal(validatedData.taxRate)
-                        : null,
-                    location: validatedData.location,
-                    supplier: validatedData.supplier,
-                    leadTime: validatedData.leadTime,
-                    userId,
-                },
-            });
-
-            if (validatedData.currentStock > 0) {
-                await tx.stockMovement.create({
+        const item = await prisma.$transaction(
+            async (tx: Prisma.TransactionClient) => {
+                const newItem = await tx.inventoryItem.create({
                     data: {
-                        inventoryItemId: newItem.id,
-                        type: "IN",
-                        quantity: validatedData.currentStock,
-                        previousStock: 0,
-                        newStock: validatedData.currentStock,
-                        reason: "INITIAL_STOCK",
-                        unitPrice: validatedData.costPrice
+                        name: validatedData.name,
+                        description: validatedData.description,
+                        sku: validatedData.sku,
+                        barcode: validatedData.barcode,
+                        category: validatedData.category,
+                        subCategory: validatedData.subCategory,
+                        brand: validatedData.brand,
+                        sellingPrice: new Decimal(validatedData.sellingPrice),
+                        costPrice: validatedData.costPrice
                             ? new Decimal(validatedData.costPrice)
                             : null,
-                        totalValue:
-                            validatedData.costPrice &&
-                            validatedData.currentStock
-                                ? new Decimal(
-                                      validatedData.costPrice *
-                                          validatedData.currentStock
-                                  )
-                                : null,
+                        mrp: validatedData.mrp
+                            ? new Decimal(validatedData.mrp)
+                            : null,
+                        currentStock: validatedData.currentStock || 0,
+                        minimumStock: validatedData.minimumStock || 0,
+                        maximumStock: validatedData.maximumStock,
+                        reorderLevel: validatedData.reorderLevel,
+                        unit: validatedData.unit || "PCS",
+                        fabric: validatedData.fabric,
+                        gsm: validatedData.gsm,
+                        width: validatedData.width
+                            ? new Decimal(validatedData.width)
+                            : null,
+                        color: validatedData.color,
+                        design: validatedData.design,
+                        pattern: validatedData.pattern,
+                        weaveType: validatedData.weaveType,
+                        images: validatedData.images || [],
+                        attributes: validatedData.attributes || {},
+                        hsnCode: validatedData.hsnCode,
+                        taxRate: validatedData.taxRate
+                            ? new Decimal(validatedData.taxRate)
+                            : null,
+                        location: validatedData.location,
+                        supplier: validatedData.supplier,
+                        leadTime: validatedData.leadTime,
                         userId,
                     },
                 });
-            }
 
-            return newItem;
-        });
+                if (validatedData.currentStock > 0) {
+                    await tx.stockMovement.create({
+                        data: {
+                            inventoryItemId: newItem.id,
+                            type: "IN",
+                            quantity: validatedData.currentStock,
+                            previousStock: 0,
+                            newStock: validatedData.currentStock,
+                            reason: "INITIAL_STOCK",
+                            unitPrice: validatedData.costPrice
+                                ? new Decimal(validatedData.costPrice)
+                                : null,
+                            totalValue:
+                                validatedData.costPrice &&
+                                validatedData.currentStock
+                                    ? new Decimal(
+                                          validatedData.costPrice *
+                                              validatedData.currentStock
+                                      )
+                                    : null,
+                            userId,
+                        },
+                    });
+                }
+
+                return newItem;
+            }
+        );
 
         // Audit log
         logger.audit(
@@ -634,6 +636,7 @@ export const deleteInventoryItem = asyncHandler(
         } catch (error) {
             logger.error(
                 "Failed to publish inventory item deleted event",
+                undefined,
                 LogCategory.BUSINESS,
                 { error, itemId: id }
             );
@@ -685,53 +688,55 @@ export const addStock = asyncHandler(async (req: Request, res: Response) => {
         throw new CustomError(400, "Quantity must be greater than 0");
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-        const item = await tx.inventoryItem.findFirst({
-            where: { id, userId },
-        });
+    const result = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+            const item = await tx.inventoryItem.findFirst({
+                where: { id, userId },
+            });
 
-        if (!item) {
-            throw new CustomError(404, "Inventory item not found");
-        }
+            if (!item) {
+                throw new CustomError(404, "Inventory item not found");
+            }
 
-        if (!item.isActive) {
-            throw new CustomError(400, "Cannot add stock to inactive item");
-        }
+            if (!item.isActive) {
+                throw new CustomError(400, "Cannot add stock to inactive item");
+            }
 
-        const previousStock = item.currentStock;
-        const newStock = previousStock + quantity;
+            const previousStock = item.currentStock;
+            const newStock = previousStock + quantity;
 
-        const updatedItem = await tx.inventoryItem.update({
-            where: { id },
-            data: {
-                currentStock: newStock,
-                lastPurchaseDate: new Date(),
-                lastPurchasePrice: unitPrice
-                    ? new Decimal(unitPrice)
-                    : undefined,
-            },
-        });
+            const updatedItem = await tx.inventoryItem.update({
+                where: { id },
+                data: {
+                    currentStock: newStock,
+                    lastPurchaseDate: new Date(),
+                    lastPurchasePrice: unitPrice
+                        ? new Decimal(unitPrice)
+                        : undefined,
+                },
+            });
 
-        const stockMovement = await tx.stockMovement.create({
-            data: {
-                inventoryItemId: id || undefined,
-                type: "ADJUSTMENT",
-                quantity: adjustment,
+            const stockMovement = await tx.stockMovement.create({
+                data: {
+                    inventoryItemId: id || undefined,
+                    type: "ADJUSTMENT",
+                    quantity: adjustment,
+                    previousStock,
+                    newStock,
+                    reason,
+                    notes,
+                    userId,
+                },
+            });
+
+            return {
+                item: updatedItem,
+                movement: stockMovement,
                 previousStock,
-                newStock,
-                reason,
-                notes,
-                userId,
-            },
-        });
-
-        return {
-            item: updatedItem,
-            movement: stockMovement,
-            previousStock,
-            adjustment,
-        };
-    });
+                adjustment,
+            };
+        }
+    );
 
     logger.audit(
         "STOCK_ADJUST",
@@ -880,7 +885,7 @@ export const getLowStockItems = asyncHandler(
             },
         });
 
-        const itemsWithSuggestions = items.map((item) => {
+        const itemsWithSuggestions = items.map((item: (typeof items)[0]) => {
             const alertLevel =
                 item.currentStock === 0
                     ? "OUT_OF_STOCK"
@@ -922,10 +927,12 @@ export const getLowStockItems = asyncHandler(
                 summary: {
                     total: items.length,
                     critical: itemsWithSuggestions.filter(
-                        (i) => i.alertLevel === "CRITICAL"
+                        (i: (typeof itemsWithSuggestions)[0]) =>
+                            i.alertLevel === "CRITICAL"
                     ).length,
                     outOfStock: itemsWithSuggestions.filter(
-                        (i) => i.alertLevel === "OUT_OF_STOCK"
+                        (i: (typeof itemsWithSuggestions)[0]) =>
+                            i.alertLevel === "OUT_OF_STOCK"
                     ).length,
                 },
             }
@@ -1044,24 +1051,24 @@ export const getInventoryAnalytics = asyncHandler(
 
         const totalItems = items.length;
         const totalStockValue = items.reduce(
-            (sum, item) =>
+            (sum: number, item: any) =>
                 sum + item.currentStock * (item.costPrice?.toNumber() || 0),
             0
         );
         const totalPotentialRevenue = items.reduce(
-            (sum, item) =>
+            (sum: number, item: any) =>
                 sum + item.currentStock * item.sellingPrice.toNumber(),
             0
         );
         const lowStockCount = items.filter(
-            (item) => item.currentStock <= item.minimumStock
+            (item: any) => item.currentStock <= item.minimumStock
         ).length;
         const outOfStockCount = items.filter(
-            (item) => item.currentStock === 0
+            (item: any) => item.currentStock === 0
         ).length;
 
         const categoryBreakdown = items.reduce(
-            (acc, item) => {
+            (acc: any, item: any) => {
                 if (!acc[item.category]) {
                     acc[item.category] = {
                         count: 0,
@@ -1082,14 +1089,14 @@ export const getInventoryAnalytics = asyncHandler(
         );
 
         const topItemsByValue = items
-            .map((item) => ({
+            .map((item: (typeof items)[0]) => ({
                 id: item.id,
                 name: item.name,
                 category: item.category,
                 stock: item.currentStock,
                 value: item.currentStock * (item.costPrice?.toNumber() || 0),
             }))
-            .sort((a, b) => b.value - a.value)
+            .sort((a: any, b: any) => b.value - a.value)
             .slice(0, 10);
 
         const thirtyDaysAgo = new Date();
@@ -1107,7 +1114,18 @@ export const getInventoryAnalytics = asyncHandler(
         });
 
         const movementSummary = recentMovements.reduce(
-            (acc, movement) => {
+            (
+                acc: {
+                    stockAdded: number;
+                    stockReduced: number;
+                    adjustmentsUp: number;
+                    adjustmentsDown: number;
+                },
+                movement: {
+                    type: "IN" | "OUT" | "ADJUSTMENT";
+                    quantity: number;
+                }
+            ) => {
                 if (movement.type === "IN") {
                     acc.stockAdded += Math.abs(movement.quantity);
                 } else if (movement.type === "OUT") {
@@ -1387,45 +1405,51 @@ export const reduceStock = asyncHandler(async (req: Request, res: Response) => {
         throw new CustomError(400, "Reason is required for stock reduction");
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-        const item = await tx.inventoryItem.findFirst({
-            where: { id, userId },
-        });
+    const result = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+            const item = await tx.inventoryItem.findFirst({
+                where: { id, userId },
+            });
 
-        if (!item) {
-            throw new CustomError(404, "Inventory item not found");
-        }
+            if (!item) {
+                throw new CustomError(404, "Inventory item not found");
+            }
 
-        if (item.currentStock < quantity) {
-            throw new CustomError(
-                400,
-                `Insufficient stock. Available: ${item.currentStock}, Requested: ${quantity}`
-            );
-        }
+            if (item.currentStock < quantity) {
+                throw new CustomError(
+                    400,
+                    `Insufficient stock. Available: ${item.currentStock}, Requested: ${quantity}`
+                );
+            }
 
-        const previousStock = item.currentStock;
-        const newStock = previousStock - quantity;
+            const previousStock = item.currentStock;
+            const newStock = previousStock - quantity;
 
-        const updatedItem = await tx.inventoryItem.update({
-            where: { id },
-            data: { currentStock: newStock },
-        });
+            const updatedItem = await tx.inventoryItem.update({
+                where: { id },
+                data: { currentStock: newStock },
+            });
 
-        const stockMovement = await tx.stockMovement.create({
-            data: {
-                inventoryItemId: id,
-                type: "OUT",
-                quantity: -quantity,
+            const stockMovement = await tx.stockMovement.create({
+                data: {
+                    inventoryItemId: id,
+                    type: "OUT",
+                    quantity: -quantity,
+                    previousStock,
+                    newStock,
+                    reason,
+                    reference,
+                    userId,
+                },
+            });
+
+            return {
+                item: updatedItem,
+                movement: stockMovement,
                 previousStock,
-                newStock,
-                reason,
-                reference,
-                userId,
-            },
-        });
-
-        return { item: updatedItem, movement: stockMovement, previousStock };
-    });
+            };
+        }
+    );
 
     const { shouldAlert, alertLevel } = shouldTriggerStockAlert(
         result.item.currentStock,
@@ -1619,50 +1643,52 @@ export const adjustStock = asyncHandler(async (req: Request, res: Response) => {
         reason,
     });
 
-    const result = await prisma.$transaction(async (tx) => {
-        const item = await tx.inventoryItem.findFirst({
-            where: { id, userId },
-        });
+    const result = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+            const item = await tx.inventoryItem.findFirst({
+                where: { id, userId },
+            });
 
-        if (!item) {
-            throw new CustomError(404, "Inventory item not found");
-        }
+            if (!item) {
+                throw new CustomError(404, "Inventory item not found");
+            }
 
-        const previousStock = item.currentStock;
-        const adjustment = newStock - previousStock;
+            const previousStock = item.currentStock;
+            const adjustment = newStock - previousStock;
 
-        if (adjustment === 0) {
-            throw new CustomError(
-                400,
-                "No adjustment needed. Stock is already at this level."
-            );
-        }
+            if (adjustment === 0) {
+                throw new CustomError(
+                    400,
+                    "No adjustment needed. Stock is already at this level."
+                );
+            }
 
-        const updatedItem = await tx.inventoryItem.update({
-            where: { id },
-            data: { currentStock: newStock },
-        });
+            const updatedItem = await tx.inventoryItem.update({
+                where: { id },
+                data: { currentStock: newStock },
+            });
 
-        const stockMovement = await tx.stockMovement.create({
-            data: {
-                inventoryItemId: id,
-                type: "ADJUSTMENT",
-                quantity: adjustment,
+            const stockMovement = await tx.stockMovement.create({
+                data: {
+                    inventoryItemId: id,
+                    type: "ADJUSTMENT",
+                    quantity: adjustment,
+                    previousStock,
+                    newStock,
+                    reason,
+                    notes,
+                    userId,
+                },
+            });
+
+            return {
+                item: updatedItem,
+                movement: stockMovement,
                 previousStock,
-                newStock,
-                reason,
-                notes,
-                userId,
-            },
-        });
-
-        return {
-            item: updatedItem,
-            movement: stockMovement,
-            previousStock,
-            adjustment,
-        };
-    });
+                adjustment,
+            };
+        }
+    );
 
     logger.audit(
         "STOCK_ADJUST",

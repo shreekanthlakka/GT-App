@@ -27,6 +27,7 @@ import {
 } from "@repo/common/ecommSchemas";
 import { generateJWT, verifyJWT } from "../utils/jwt";
 import { SendEmailRequestPublisher } from "@repo/common-backend/publisher";
+import { Prisma } from "@repo/db";
 
 // ========================================
 // REGISTER
@@ -65,55 +66,57 @@ export const register = asyncHandler(async (req, res) => {
     const referralCode = `${validatedData.name.substring(0, 3).toUpperCase()}${Date.now().toString().slice(-6)}`;
 
     // Create user with transaction
-    const result = await prisma.$transaction(async (tx) => {
-        // Generate email verification token (6-digit OTP)
-        const emailVerificationToken = Math.floor(
-            100000 + Math.random() * 900000
-        ).toString();
+    const result = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+            // Generate email verification token (6-digit OTP)
+            const emailVerificationToken = Math.floor(
+                100000 + Math.random() * 900000
+            ).toString();
 
-        const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+            const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-        const user = await tx.ecommerceUser.create({
-            data: {
-                email: validatedData.email,
-                name: validatedData.name,
-                phone: validatedData.phone,
-                password: hashedPassword,
-                dateOfBirth: validatedData.dateOfBirth
-                    ? new Date(validatedData.dateOfBirth)
-                    : undefined,
-                gender: validatedData.gender,
-                referralCode,
-                referredBy: validatedData.referralCode,
-                signupSource: validatedData.signupSource,
-                emailVerificationToken,
-                passwordResetExpiry: tokenExpiry, // Using this field for email verification expiry
-                preferences:
-                    validatedData.preferences ||
-                    ({
-                        newsletter: true,
-                        sms: true,
-                        whatsapp: true,
-                        language: "en",
-                        currency: "INR",
-                    } as any),
-            },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                phone: true,
-                emailVerified: true,
-                phoneVerified: true,
-                signupSource: true,
-                referralCode: true,
-                preferences: true,
-                createdAt: true,
-            },
-        });
+            const user = await tx.ecommerceUser.create({
+                data: {
+                    email: validatedData.email,
+                    name: validatedData.name,
+                    phone: validatedData.phone,
+                    password: hashedPassword,
+                    dateOfBirth: validatedData.dateOfBirth
+                        ? new Date(validatedData.dateOfBirth)
+                        : undefined,
+                    gender: validatedData.gender,
+                    referralCode,
+                    referredBy: validatedData.referralCode,
+                    signupSource: validatedData.signupSource,
+                    emailVerificationToken,
+                    passwordResetExpiry: tokenExpiry, // Using this field for email verification expiry
+                    preferences:
+                        validatedData.preferences ||
+                        ({
+                            newsletter: true,
+                            sms: true,
+                            whatsapp: true,
+                            language: "en",
+                            currency: "INR",
+                        } as any),
+                },
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    phone: true,
+                    emailVerified: true,
+                    phoneVerified: true,
+                    signupSource: true,
+                    referralCode: true,
+                    preferences: true,
+                    createdAt: true,
+                },
+            });
 
-        return { user, emailVerificationToken };
-    });
+            return { user, emailVerificationToken };
+        }
+    );
 
     const { user, emailVerificationToken } = result;
 

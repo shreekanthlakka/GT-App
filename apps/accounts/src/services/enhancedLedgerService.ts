@@ -11,7 +11,7 @@ import {
     Prisma,
     InvoiceStatus,
     SaleStatus,
-} from "@repo/db/client";
+} from "@repo/db";
 
 // ========================================
 // TYPES & INTERFACES (same as before)

@@ -18,6 +18,7 @@ import { kafkaWrapper } from "@repo/common-backend/kafka";
 import { LedgerService } from "../services/ledgerService";
 import { generateVoucherId } from "@repo/common-backend/utils";
 import { InventoryService } from "../services/inventoryService";
+import { Prisma } from "@repo/db";
 
 export const createSale = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -155,51 +156,53 @@ export const createSale = asyncHandler(async (req, res) => {
     const voucherId = generateSaleVoucherId(customer.name, saleDate, saleNo);
 
     // Create sale transaction
-    const sale = await prisma.$transaction(async (tx) => {
-        // Create sale record
-        const newSale = await tx.sale.create({
-            data: {
-                voucherId,
-                saleNo,
-                date: saleDate,
-                amount: finalAmount,
-                paidAmount: 0,
-                remainingAmount: finalAmount,
-                status: "PENDING",
-                items: validatedItems,
-                taxAmount: Number(taxAmount),
-                discountAmount: Number(discountAmount),
-                roundOffAmount: Number(roundOffAmount),
-                salesPerson,
-                deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
-                deliveryAddress,
-                transportation,
-                vehicleNo,
-                reference,
-                terms,
-                notes,
-                customerId,
-                userId,
-            },
-            include: {
-                customer: {
-                    select: { name: true, phone: true, email: true },
+    const sale = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+            // Create sale record
+            const newSale = await tx.sale.create({
+                data: {
+                    voucherId,
+                    saleNo,
+                    date: saleDate,
+                    amount: finalAmount,
+                    paidAmount: 0,
+                    remainingAmount: finalAmount,
+                    status: "PENDING",
+                    items: validatedItems,
+                    taxAmount: Number(taxAmount),
+                    discountAmount: Number(discountAmount),
+                    roundOffAmount: Number(roundOffAmount),
+                    salesPerson,
+                    deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+                    deliveryAddress,
+                    transportation,
+                    vehicleNo,
+                    reference,
+                    terms,
+                    notes,
+                    customerId,
+                    userId,
                 },
-            },
-        });
+                include: {
+                    customer: {
+                        select: { name: true, phone: true, email: true },
+                    },
+                },
+            });
 
-        // Create ledger entry - Customer owes us money (Debit)
-        await LedgerService.createSaleEntry({
-            saleId: newSale.id,
-            customerId,
-            amount: finalAmount,
-            description: `Sale ${saleNo} - ${customer.name}`,
-            userId,
-            date: saleDate,
-        });
+            // Create ledger entry - Customer owes us money (Debit)
+            await LedgerService.createSaleEntry({
+                saleId: newSale.id,
+                customerId,
+                amount: finalAmount,
+                description: `Sale ${saleNo} - ${customer.name}`,
+                userId,
+                date: saleDate,
+            });
 
-        return newSale;
-    });
+            return newSale;
+        }
+    );
 
     // Audit log
     logger.audit("CREATE", "Sale", sale.id, userId, null, sale, {
@@ -253,6 +256,13 @@ export const createSale = asyncHandler(async (req, res) => {
     });
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * =========================================================================================
+ *    #########################   Get sales ####################################
+ *============================================================================================
+ *
+ */
 
 export const getSales = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
@@ -507,34 +517,36 @@ export const updateSale = asyncHandler(async (req, res) => {
     }
 
     // Update sale in transaction
-    const updatedSale = await prisma.$transaction(async (tx) => {
-        // Update sale record
-        const updated = await tx.sale.update({
-            where: { id },
-            data: {
-                ...updateData,
-                updatedAt: new Date(),
-            },
-            include: {
-                customer: {
-                    select: { name: true, phone: true, email: true },
+    const updatedSale = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+            // Update sale record
+            const updated = await tx.sale.update({
+                where: { id },
+                data: {
+                    ...updateData,
+                    updatedAt: new Date(),
                 },
-            },
-        });
-
-        // Create ledger adjustment if amount changed
-        if (needsLedgerAdjustment) {
-            await LedgerService.createAdjustmentEntry({
-                customerId: existingSale.customerId,
-                amount: amountDifference,
-                description: `Sale ${existingSale.saleNo} amount adjustment`,
-                reason: `Updated from ${existingSale.amount} to ${updateData.amount}`,
-                userId,
+                include: {
+                    customer: {
+                        select: { name: true, phone: true, email: true },
+                    },
+                },
             });
-        }
 
-        return updated;
-    });
+            // Create ledger adjustment if amount changed
+            if (needsLedgerAdjustment) {
+                await LedgerService.createAdjustmentEntry({
+                    customerId: existingSale.customerId,
+                    amount: amountDifference,
+                    description: `Sale ${existingSale.saleNo} amount adjustment`,
+                    reason: `Updated from ${existingSale.amount} to ${updateData.amount}`,
+                    userId,
+                });
+            }
+
+            return updated;
+        }
+    );
 
     // Calculate changes for event
     const changes: Record<string, { oldValue: any; newValue: any }> = {};
@@ -621,35 +633,37 @@ export const cancelSale = asyncHandler(async (req, res) => {
     }
 
     // Cancel sale in transaction
-    const cancelledSale = await prisma.$transaction(async (tx) => {
-        // Update sale status
-        const updated = await tx.sale.update({
-            where: { id },
-            data: {
-                status: "CANCELLED",
-                notes: sale.notes
-                    ? `${sale.notes}\n\nCANCELLED: ${reason}`
-                    : `CANCELLED: ${reason}`,
-                updatedAt: new Date(),
-            },
-            include: {
-                customer: {
-                    select: { name: true, phone: true, email: true },
+    const cancelledSale = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+            // Update sale status
+            const updated = await tx.sale.update({
+                where: { id },
+                data: {
+                    status: "CANCELLED",
+                    notes: sale.notes
+                        ? `${sale.notes}\n\nCANCELLED: ${reason}`
+                        : `CANCELLED: ${reason}`,
+                    updatedAt: new Date(),
                 },
-            },
-        });
+                include: {
+                    customer: {
+                        select: { name: true, phone: true, email: true },
+                    },
+                },
+            });
 
-        // Reverse the ledger entry
-        await LedgerService.createAdjustmentEntry({
-            customerId: sale.customerId,
-            amount: -Number(sale.amount), // Negative to reverse the debit
-            description: `Sale ${sale.saleNo} cancellation`,
-            reason: reason || "Sale cancelled",
-            userId,
-        });
+            // Reverse the ledger entry
+            await LedgerService.createAdjustmentEntry({
+                customerId: sale.customerId,
+                amount: -Number(sale.amount), // Negative to reverse the debit
+                description: `Sale ${sale.saleNo} cancellation`,
+                reason: reason || "Sale cancelled",
+                userId,
+            });
 
-        return updated;
-    });
+            return updated;
+        }
+    );
 
     // Audit log
     logger.audit("UPDATE", "Sale", id, userId, sale, cancelledSale, {
@@ -762,14 +776,14 @@ export const getSaleAnalytics = asyncHandler(async (req, res) => {
     );
 
     // Get customer details for top customers
-    const customerIds = topCustomers.map((tc) => tc.customerId);
+    const customerIds = topCustomers.map((tc: any) => tc.customerId);
     const customers = await prisma.customer.findMany({
         where: { id: { in: customerIds } },
         select: { id: true, name: true, city: true },
     });
 
-    const topCustomersWithDetails = topCustomers.map((tc) => {
-        const customer = customers.find((c) => c.id === tc.customerId);
+    const topCustomersWithDetails = topCustomers.map((tc: any) => {
+        const customer = customers.find((c: any) => c.id === tc.customerId);
         return {
             customerId: tc.customerId,
             customerName: customer?.name || "Unknown",
@@ -791,7 +805,7 @@ export const getSaleAnalytics = asyncHandler(async (req, res) => {
         { count: number; totalValue: number; totalQuantity: number }
     > = {};
 
-    topItems.forEach((sale) => {
+    topItems.forEach((sale: (typeof topItems)[0]) => {
         if (sale.items && Array.isArray(sale.items)) {
             (sale.items as any[]).forEach((item) => {
                 const key = `${item.itemName}_${item.color || ""}_${item.design || ""}`;
@@ -850,7 +864,7 @@ export const getSaleAnalytics = asyncHandler(async (req, res) => {
             },
             topCustomers: topCustomersWithDetails,
             topSellingItems,
-            dailyTrends: dailyTrends.map((trend) => ({
+            dailyTrends: dailyTrends.map((trend: (typeof dailyTrends)[0]) => ({
                 date: trend.date.toISOString().split("T")[0],
                 sales: trend._sum.amount || 0,
                 count: trend._count,
@@ -909,7 +923,7 @@ export const getOverdueSales = asyncHandler(async (req, res) => {
     };
 
     const now = new Date();
-    overdueSales.forEach((sale) => {
+    overdueSales.forEach((sale: (typeof overdueSales)[0]) => {
         const daysOverdue = Math.floor(
             (now.getTime() - sale.date.getTime()) / (1000 * 60 * 60 * 24)
         );
@@ -931,7 +945,8 @@ export const getOverdueSales = asyncHandler(async (req, res) => {
     });
 
     const totalOverdue = overdueSales.reduce(
-        (sum, sale) => sum + Number(sale.remainingAmount),
+        (sum: number, sale: (typeof overdueSales)[0]) =>
+            sum + Number(sale.remainingAmount),
         0
     );
 
@@ -939,13 +954,15 @@ export const getOverdueSales = asyncHandler(async (req, res) => {
         200,
         "Overdue sales retrieved successfully",
         {
-            overdueSales: overdueSales.map((sale) => ({
-                ...sale,
-                daysOverdue: Math.floor(
-                    (now.getTime() - sale.date.getTime()) /
-                        (1000 * 60 * 60 * 24)
-                ),
-            })),
+            overdueSales: overdueSales.map(
+                (sale: (typeof overdueSales)[0]) => ({
+                    ...sale,
+                    daysOverdue: Math.floor(
+                        (now.getTime() - sale.date.getTime()) /
+                            (1000 * 60 * 60 * 24)
+                    ),
+                })
+            ),
             summary: {
                 totalCount: overdueSales.length,
                 totalAmount: totalOverdue,

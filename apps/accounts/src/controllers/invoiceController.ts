@@ -349,7 +349,7 @@ export const getInvoices = asyncHandler(async (req, res) => {
     ]);
 
     // Add computed fields
-    const invoicesWithComputed = invoices.map((invoice) => ({
+    const invoicesWithComputed = invoices.map((invoice: any) => ({
         ...invoice,
         isOverdue:
             invoice.dueDate &&
@@ -864,7 +864,7 @@ export const getOverdueInvoices = asyncHandler(async (req, res) => {
     ]);
 
     // Add days overdue calculation
-    const overdueWithDays = overdueInvoices.map((invoice) => ({
+    const overdueWithDays = overdueInvoices.map((invoice: any) => ({
         ...invoice,
         daysOverdue: Math.floor(
             (Date.now() - invoice.dueDate!.getTime()) / (1000 * 60 * 60 * 24)
@@ -885,14 +885,15 @@ export const getOverdueInvoices = asyncHandler(async (req, res) => {
             },
             summary: {
                 totalOverdueAmount: overdueWithDays.reduce(
-                    (sum, inv) => sum + inv.overdueAmount,
+                    (sum: number, inv: any) => sum + inv.overdueAmount,
                     0
                 ),
                 averageDaysOverdue:
                     overdueWithDays.length > 0
                         ? Math.round(
                               overdueWithDays.reduce(
-                                  (sum, inv) => sum + inv.daysOverdue,
+                                  (sum: number, inv: any) =>
+                                      sum + inv.daysOverdue,
                                   0
                               ) / overdueWithDays.length
                           )
@@ -978,14 +979,14 @@ export const getInvoiceAnalytics = asyncHandler(async (req, res) => {
         ]);
 
     // Get party details
-    const partyIds = topParties.map((tp) => tp.partyId);
+    const partyIds = topParties.map((tp: any) => tp.partyId);
     const parties = await prisma.party.findMany({
         where: { id: { in: partyIds } },
         select: { id: true, name: true, category: true, paymentTerms: true },
     });
 
-    const topPartiesWithDetails = topParties.map((tp) => {
-        const party = parties.find((p) => p.id === tp.partyId);
+    const topPartiesWithDetails = topParties.map((tp: any) => {
+        const party = parties.find((p: any) => p.id === tp.partyId);
         return {
             partyId: tp.partyId,
             partyName: party?.name || "Unknown",
@@ -1128,7 +1129,7 @@ export const getPaymentTimingAnalysis = asyncHandler(async (req, res) => {
 
     // Analyze payment timing
     const paymentAnalysis = invoicesWithPayments
-        .map((invoice) => {
+        .map((invoice: (typeof invoicesWithPayments)[0]) => {
             const finalPayment = invoice.invoicePayments[0];
             if (!finalPayment || !invoice.dueDate) return null;
 
@@ -1162,7 +1163,7 @@ export const getPaymentTimingAnalysis = asyncHandler(async (req, res) => {
 
     // Group by payment status
     const paymentStatusBreakdown = paymentAnalysis.reduce(
-        (acc: Record<string, number>, analysis) => {
+        (acc: Record<string, number>, analysis: any) => {
             if (analysis) {
                 acc[analysis.paymentStatus] =
                     (acc[analysis.paymentStatus] || 0) + 1;
@@ -1187,7 +1188,7 @@ export const getPaymentTimingAnalysis = asyncHandler(async (req, res) => {
                     totalAmount: number;
                 }
             >,
-            analysis
+            analysis: any
         ) => {
             if (!analysis) return acc;
 
@@ -1243,15 +1244,15 @@ export const getPaymentTimingAnalysis = asyncHandler(async (req, res) => {
             summary: {
                 totalInvoicesAnalyzed: paymentAnalysis.length,
                 onTimePayments: paymentAnalysis.filter(
-                    (p) => p && p.daysDifference <= 0
+                    (p: any) => p && p.daysDifference <= 0
                 ).length,
                 latePayments: paymentAnalysis.filter(
-                    (p) => p && p.daysDifference > 0
+                    (p: any) => p && p.daysDifference > 0
                 ).length,
                 onTimeRate:
                     paymentAnalysis.length > 0
                         ? (paymentAnalysis.filter(
-                              (p) => p && p.daysDifference <= 0
+                              (p: any) => p && p.daysDifference <= 0
                           ).length /
                               paymentAnalysis.length) *
                           100
@@ -1260,7 +1261,8 @@ export const getPaymentTimingAnalysis = asyncHandler(async (req, res) => {
                     paymentAnalysis.length > 0
                         ? Math.round(
                               (paymentAnalysis.reduce(
-                                  (sum, p) => sum + (p?.daysDifference || 0),
+                                  (sum: number, p: any) =>
+                                      sum + (p?.daysDifference || 0),
                                   0
                               ) /
                                   paymentAnalysis.length) *
@@ -1426,7 +1428,7 @@ export const searchInventoryForSale = asyncHandler(async (req, res) => {
     });
 
     const response = new CustomResponse(200, "Inventory items retrieved", {
-        items: items.map((item) => ({
+        items: items.map((item: any) => ({
             ...item,
             available: Number(item.currentStock),
         })),

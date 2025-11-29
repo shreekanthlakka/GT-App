@@ -2,14 +2,22 @@
     "name": "@repo/db",
     "version": "1.0.0",
     "description": "",
-    "main": "index.js",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
     "exports": {
-        "./prisma": "./src/index.ts"
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./prisma": {
+            "types": "./dist/client.d.ts",
+            "default": "./dist/client.js"
+        }
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "npm run db:generate && tsc",
-        "dev": "npm run db:generate && tsc --watch",
+        "build": "npm run db:generate && tsc -b",
+        "dev": "npm run db:generate && tsc -b",
         "clean": "rm -rf dist && rm -rf src/generated",
         "db:generate": "prisma generate",
         "db:push": "prisma db push",

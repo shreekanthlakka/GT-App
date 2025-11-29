@@ -26,7 +26,7 @@ export class ExportService {
                 const doc = new PDFDocument({ margin: 50 });
                 const chunks: Buffer[] = [];
 
-                doc.on("data", (chunk) => chunks.push(chunk));
+                doc.on("data", (chunk: any) => chunks.push(chunk));
                 doc.on("end", () => resolve(Buffer.concat(chunks)));
 
                 // Header
