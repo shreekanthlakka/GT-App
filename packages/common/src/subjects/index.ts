@@ -267,6 +267,9 @@ export enum Subjects {
     OCRHighConfidenceResult = "ocr:high-confidence",
     OCRLowConfidenceResult = "ocr:low-confidence",
     OCRManualReviewRequired = "ocr:manual-review-required",
+    OCRDataReviewed = "ocr:data-reviewed",
+    OCRDataApproved = "ocr:data-approved",
+    OCRDataRejected = "ocr:data-rejected",
 
     // Auto-Creation from OCR
     InvoiceAutoCreatedFromOCR = "invoice:auto-created-from-ocr",

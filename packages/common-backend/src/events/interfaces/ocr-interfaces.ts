@@ -484,6 +484,54 @@ export interface ExpenseAutoCreatedFromOCREvent extends BaseEvent {
     };
 }
 
+export interface OCRDataReviewedEvent extends BaseEvent {
+    subject: Subjects.OCRDataReviewed;
+    data: {
+        ocrId: string;
+        jobId?: string;
+        reviewedAt: string;
+        reviewedBy: string;
+        correctionsMade: boolean;
+        notes?: string;
+        extractedData?: any;
+        correctedData?: any;
+        userId: string;
+    };
+}
+
+export interface OCRDataApprovedEvent extends BaseEvent {
+    subject: Subjects.OCRDataApproved;
+    data: {
+        ocrId: string;
+        jobId?: string;
+        approvedAt: string;
+        approvedBy: string;
+        recordCreated: boolean;
+        createdRecordId?: string;
+        createdRecordType?: string;
+        autoApproved: boolean;
+        userId: string;
+    };
+}
+
+export interface OCRDataRejectedEvent extends BaseEvent {
+    subject: Subjects.OCRDataRejected;
+    data: {
+        ocrId: string;
+        jobId?: string;
+        rejectedAt: string;
+        rejectedBy: string;
+        reason: string;
+        rejectionCategory?:
+            | "DUPLICATE"
+            | "POOR_QUALITY"
+            | "INVALID_DATA"
+            | "MANUAL"
+            | "OTHER";
+        userId: string;
+    };
+}
+
 // ========================================
 // EXPORT ALL OCR EVENT TYPES
 // ========================================
@@ -517,4 +565,8 @@ export type OCREventTypes =
     | InvoiceAutoCreatedFromOCREvent
     | SaleReceiptAutoCreatedFromOCREvent
     | InvoicePaymentAutoCreatedFromOCREvent
-    | ExpenseAutoCreatedFromOCREvent;
+    | ExpenseAutoCreatedFromOCREvent
+    // Review & Approval
+    | OCRDataReviewedEvent
+    | OCRDataApprovedEvent
+    | OCRDataRejectedEvent;

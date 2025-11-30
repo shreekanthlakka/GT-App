@@ -16,6 +16,17 @@ app.get("/health", (req, res) => {
     });
 });
 
+app.use((req, res, next) => {
+    console.log(
+        `${req.ip} ===> ${req.method} ===> ${req.url} ==> ${new Date()}`
+    );
+    next();
+});
+
+// ==============================================
+//                   ROUTES
+// ==============================================
+
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/notification", notificationRoutes);
 app.use("/api/v1/template", templateRoutes);

@@ -20,6 +20,13 @@ app.get("/health", (req, res) => {
     });
 });
 
+app.use((req, res, next) => {
+    console.log(
+        `${req.ip} ===> ${req.method} ===> ${req.url} ==> ${new Date()}`
+    );
+    next();
+});
+
 // ==============================================
 //                   ROUTES
 // ==============================================
