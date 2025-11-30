@@ -1,5 +1,6 @@
 // apps/ocr/src/controllers/ocrController.ts - ENHANCED VERSION
-import { prisma, OCRStatus } from "@repo/db/prisma";
+import { prisma } from "@repo/db/prisma";
+import { OCRStatus } from "@repo/db";
 import {
     asyncHandler,
     CustomError,
@@ -231,21 +232,24 @@ export const getAllOCRDocuments = asyncHandler(async (req, res) => {
     ]);
 
     // Add summary for each document
-    const documentsWithSummary = ocrDocuments.map((doc) => {
-        const extractedData = doc.extractedData as any;
-        return {
-            ...doc,
-            summary: {
-                hasQualityIssues:
-                    extractedData.qualityCheck?.issues?.length > 0,
-                isDuplicate: extractedData.duplicateCheck?.isDuplicate,
-                hasValidationErrors: extractedData.invalidFields?.length > 0,
-                needsReview:
-                    doc.status === OCRStatus.MANUAL_REVIEW ||
-                    extractedData.lowConfidenceFields?.length > 0,
-            },
-        };
-    });
+    const documentsWithSummary = ocrDocuments.map(
+        (doc: (typeof ocrDocuments)[0]) => {
+            const extractedData = doc.extractedData as any;
+            return {
+                ...doc,
+                summary: {
+                    hasQualityIssues:
+                        extractedData.qualityCheck?.issues?.length > 0,
+                    isDuplicate: extractedData.duplicateCheck?.isDuplicate,
+                    hasValidationErrors:
+                        extractedData.invalidFields?.length > 0,
+                    needsReview:
+                        doc.status === OCRStatus.MANUAL_REVIEW ||
+                        extractedData.lowConfidenceFields?.length > 0,
+                },
+            };
+        }
+    );
 
     const response = new CustomResponse(
         200,
@@ -436,6 +440,8 @@ export const approveOCRData = asyncHandler(async (req, res) => {
         recordCreated: createRecord,
         createdRecordId,
         createdRecordType,
+        autoApproved: false,
+        jobId: ocrData.jobId,
     });
 
     logger.info("OCR data approved", LogCategory.OCR, {
@@ -672,12 +678,22 @@ export const getOCRAnalytics = asyncHandler(async (req, res) => {
 
     const avgProcessingTime =
         processingTimes.length > 0
-            ? processingTimes.reduce((sum, doc) => {
-                  return (
-                      sum +
-                      (doc.updatedAt.getTime() - doc.createdAt.getTime()) / 1000
-                  );
-              }, 0) / processingTimes.length
+            ? processingTimes.reduce(
+                  (
+                      sum: number,
+                      doc: {
+                          createdAt: Date;
+                          updatedAt: Date;
+                      }
+                  ) => {
+                      return (
+                          sum +
+                          (doc.updatedAt.getTime() - doc.createdAt.getTime()) /
+                              1000
+                      );
+                  },
+                  0
+              ) / processingTimes.length
             : 0;
 
     const response = new CustomResponse(
@@ -696,7 +712,13 @@ export const getOCRAnalytics = asyncHandler(async (req, res) => {
                 duplicatesDetected,
                 validationFailures,
                 statusBreakdown: statusBreakdown.reduce(
-                    (acc, item) => {
+                    (
+                        acc: Record<string, number>,
+                        item: {
+                            status: string;
+                            _count: number;
+                        }
+                    ) => {
                         acc[item.status] = item._count;
                         return acc;
                     },

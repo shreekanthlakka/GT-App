@@ -13,6 +13,9 @@ import {
     InvoiceAutoCreatedFromOCREvent,
     SaleReceiptAutoCreatedFromOCREvent,
     InvoicePaymentAutoCreatedFromOCREvent,
+    OCRDataRejectedEvent,
+    OCRDataApprovedEvent,
+    OCRDataReviewedEvent,
 } from "@repo/common-backend/interfaces";
 import { Subjects } from "@repo/common/subjects";
 import { KafkaPublisher } from "@repo/common-backend/kafka";
@@ -166,5 +169,44 @@ export class InvoicePaymentAutoCreatedFromOCRPublisher extends KafkaPublisher<In
         data: InvoicePaymentAutoCreatedFromOCREvent["data"]
     ): string {
         return `payment-${data.paymentId}-auto-created-ocr-${data.ocrJobId}`;
+    }
+}
+
+// ========================================
+// OCR DATA REVIEWED PUBLISHER
+// Uses: OCR_PROCESSING_EVENTS topic
+// ========================================
+export class OCRDataReviewedPublisher extends KafkaPublisher<OCRDataReviewedEvent> {
+    subject = Subjects.OCRDataReviewed as const;
+    topic = TopicNames.OCR_PROCESSING_EVENTS;
+
+    protected generateMessageKey(data: OCRDataReviewedEvent["data"]): string {
+        return `ocr-data-${data.ocrId}-reviewed-${data.userId}`;
+    }
+}
+
+// ========================================
+// OCR DATA APPROVED PUBLISHER
+// Uses: OCR_PROCESSING_EVENTS topic
+// ========================================
+export class OCRDataApprovedPublisher extends KafkaPublisher<OCRDataApprovedEvent> {
+    subject = Subjects.OCRDataApproved as const;
+    topic = TopicNames.OCR_PROCESSING_EVENTS;
+
+    protected generateMessageKey(data: OCRDataApprovedEvent["data"]): string {
+        return `ocr-data-${data.ocrId}-approved-${data.userId}`;
+    }
+}
+
+// ========================================
+// OCR DATA REJECTED PUBLISHER
+// Uses: OCR_PROCESSING_EVENTS topic
+// ========================================
+export class OCRDataRejectedPublisher extends KafkaPublisher<OCRDataRejectedEvent> {
+    subject = Subjects.OCRDataRejected as const;
+    topic = TopicNames.OCR_PROCESSING_EVENTS;
+
+    protected generateMessageKey(data: OCRDataRejectedEvent["data"]): string {
+        return `ocr-data-${data.ocrId}-rejected-${data.userId}`;
     }
 }
