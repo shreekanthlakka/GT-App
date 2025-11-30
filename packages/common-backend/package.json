@@ -1,8 +1,9 @@
 {
     "name": "@repo/common-backend",
     "version": "1.0.0",
-    "description": "",
+    "description": "A common library for backend services",
     "main": "./dist/index.js",
+    "type": "commonjs",
     "exports": {
         "./interfaces": {
             "types": "./dist/events/interfaces/index.d.ts",
@@ -43,7 +44,9 @@
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "tsc -b"
+        "dev": "tsc -b --watch",
+        "build": "tsc -b",
+        "clean": "rm -rf dist"
     },
     "keywords": [],
     "author": "",

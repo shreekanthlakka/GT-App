@@ -1,9 +1,10 @@
 {
     "name": "@repo/db",
     "version": "1.0.0",
-    "description": "",
+    "description": "prisma client and db schema",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
+    "type": "commonjs",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
