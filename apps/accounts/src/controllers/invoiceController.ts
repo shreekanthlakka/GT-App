@@ -1224,7 +1224,9 @@ export const getPaymentTimingAnalysis = asyncHandler(async (req, res) => {
     );
 
     // Convert to array and sort by reliability
-    const partyReliabilityRanking = Object.values(partyPaymentBehavior)
+    const partyReliabilityRanking = (
+        Object.values(partyPaymentBehavior) as any[]
+    )
         .map((party) => ({
             ...party,
             onTimeRate: (party.onTimePayments / party.totalPayments) * 100,

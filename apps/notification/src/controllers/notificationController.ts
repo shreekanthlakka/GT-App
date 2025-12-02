@@ -541,15 +541,17 @@ export const getNotificationStats = asyncHandler(async (req, res) => {
                     total: totalStats[0]?._count.id || 0,
                     totalRetries: totalStats[0]?._sum.retryCount || 0,
                 },
-                byChannel: channelStats.map((stat) => ({
-                    channel: stat.channel,
-                    count: stat._count.id,
-                })),
-                byStatus: statusStats.map((stat) => ({
+                byChannel: channelStats.map(
+                    (stat: (typeof channelStats)[0]) => ({
+                        channel: stat.channel,
+                        count: stat._count.id,
+                    })
+                ),
+                byStatus: statusStats.map((stat: (typeof statusStats)[0]) => ({
                     status: stat.status,
                     count: stat._count.id,
                 })),
-                byType: typeStats.map((stat) => ({
+                byType: typeStats.map((stat: (typeof typeStats)[0]) => ({
                     type: stat.type,
                     count: stat._count.id,
                 })),

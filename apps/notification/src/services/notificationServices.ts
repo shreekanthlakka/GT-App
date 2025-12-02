@@ -8,7 +8,7 @@ import { EmailProvider } from "./providers/emailProvider";
 import { SMSProvider } from "./providers/smsProvider";
 import { WhatsAppProvider } from "./providers/whatsAppProvider";
 import { TemplateService } from "./templateServices";
-import { NotificationType } from "@repo/db/prisma";
+import { NotificationType } from "@repo/db";
 import {
     SendEmailRequestEvent,
     SendSMSRequestEvent,

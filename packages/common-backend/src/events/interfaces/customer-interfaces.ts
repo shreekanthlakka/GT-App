@@ -48,6 +48,8 @@ export interface CustomerUpdatedEvent extends BaseEvent {
         contactChanged?: boolean;
         creditLimitChanged?: boolean;
         addressChanged?: boolean;
+        tagsChanged?: boolean;
+        preferencesChanged?: boolean;
     };
 }
 

@@ -276,14 +276,14 @@ export class StockOrderedPublisher extends KafkaPublisher<StockOrderedEvent> {
 /**
  * Publisher for low stock alert events
  */
-// export class StockLowPublisher extends KafkaPublisher<StockLowEvent> {
-//     subject = Subjects.StockLow as const;
-//     topic = TopicNames.STOCK_MOVEMENT;
+export class StockLowPublisher extends KafkaPublisher<StockLowEvent> {
+    subject = Subjects.StockLow as const;
+    topic = TopicNames.STOCK_MOVEMENT;
 
-//     protected generateMessageKey(data: StockLowEvent["data"]): string {
-//         return data.inventoryItemId;
-//     }
-// }
+    protected generateMessageKey(data: StockLowEvent["data"]): string {
+        return data.inventoryItemId;
+    }
+}
 
 export class LowStockAlertPublisher extends KafkaPublisher<StockLowEvent> {
     subject = Subjects.StockLow as const;

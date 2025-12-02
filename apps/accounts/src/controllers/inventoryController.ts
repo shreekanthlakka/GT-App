@@ -21,6 +21,7 @@ import {
     calculateReorderQuantity,
     determineStockStatus,
     calculateVariancePercentage,
+    StockLowPublisher,
 } from "../events/publishers/inventoryPublishers";
 
 // ========================================
@@ -674,6 +675,7 @@ export const addStock = asyncHandler(async (req: Request, res: Response) => {
     }
 
     const { id } = req.params;
+
     const {
         quantity,
         reason,
@@ -718,7 +720,7 @@ export const addStock = asyncHandler(async (req: Request, res: Response) => {
 
             const stockMovement = await tx.stockMovement.create({
                 data: {
-                    inventoryItemId: id || undefined,
+                    inventoryItemId: id,
                     type: "ADJUSTMENT",
                     quantity: adjustment,
                     previousStock,
@@ -726,6 +728,7 @@ export const addStock = asyncHandler(async (req: Request, res: Response) => {
                     reason,
                     notes,
                     userId,
+                    batchNumber,
                 },
             });
 
@@ -1173,15 +1176,14 @@ export const getInventoryAnalytics = asyncHandler(
                             100
                     ),
                 },
-                categoryBreakdown: Object.entries(categoryBreakdown).map(
-                    ([category, data]) => ({
-                        category,
-                        ...data,
-                        averageValue:
-                            Math.round((data.totalValue / data.count) * 100) /
-                            100,
-                    })
-                ),
+                categoryBreakdown: (
+                    Object.entries(categoryBreakdown) as [string, any]
+                ).map(([category, data]) => ({
+                    category,
+                    ...data,
+                    averageValue:
+                        Math.round((data.totalValue / data.count) * 100) / 100,
+                })),
                 topItemsByValue,
                 last30Days: movementSummary,
             }
@@ -1318,71 +1320,6 @@ export const getInventoryBySkuOrBarcode = asyncHandler(async (req, res) => {
     );
     res.status(response.statusCode).json(response);
 });
-
-// create({
-//       data: {
-//         inventoryItemId: id,
-//         type: "IN",
-//         quantity,
-//         previousStock,
-//         newStock,
-//         reason: reason || "PURCHASE",
-//         reference,
-//         batchNumber,
-//         unitPrice: unitPrice ? new Decimal(unitPrice) : null,
-//         totalValue: unitPrice ? new Decimal(unitPrice * quantity) : null,
-//         userId,
-//       },
-//     });
-
-//     return { item: updatedItem, movement: stockMovement, previousStock };
-//   });
-
-//   logger.audit("STOCK_ADD", "StockMovement", result.movement.id, userId,
-//     { currentStock: result.previousStock },
-//     { currentStock: result.item.currentStock },
-//     { ipAddress: req.ip, userAgent: req.headers["user-agent"] }
-//   );
-
-//   try {
-//     const publisher = new StockAddedPublisher(kafkaWrapper.producer);
-//     const stockStatus = determineStockStatus(
-//       result.item.currentStock,
-//       result.item.minimumStock,
-//       result.item.maximumStock || undefined
-//     );
-
-//     await publisher.publish({
-//       id: result.movement.id,
-//       inventoryItemId: id,
-//       inventoryItemName: result.item.name,
-//       sku: result.item.sku || undefined,
-//       quantity,
-//       previousStock: result.previousStock,
-//       newStock: result.item.currentStock,
-//       unit: result.item.unit,
-//       unitPrice,
-//       totalValue: unitPrice ? unitPrice * quantity : undefined,
-//       reason: reason || "PURCHASE",
-//       reference,
-//       batchNumber,
-//       condition: "NEW",
-//       receivedDate: new Date().toISOString(),
-//       createdBy: userId,
-//       createdAt: result.movement.createdAt.toISOString(),
-//       userId,
-//       stockStatus,
-//     });
-//   } catch (error) {
-//     logger.error("Failed to publish stock added event", LogCategory.BUSINESS, { error, itemId: id });
-//   }
-
-//   const response = new CustomResponse(200, "Stock added successfully", {
-//     item: result.item,
-//     movement: result.movement,
-//   });
-//   res.status(response.statusCode).json(response);
-// });
 
 /**
  * Reduce stock from inventory item

@@ -158,10 +158,12 @@ export const getDashboardStats = asyncHandler(
                         pending: pendingNotifications,
                         deliveryRate: parseFloat(deliveryRate as string),
                     },
-                    channelBreakdown: channelBreakdown.map((item) => ({
-                        channel: item.channel,
-                        count: item._count.id,
-                    })),
+                    channelBreakdown: channelBreakdown.map(
+                        (item: (typeof channelBreakdown)[0]) => ({
+                            channel: item.channel,
+                            count: item._count.id,
+                        })
+                    ),
                     period,
                 }
             )
@@ -192,7 +194,7 @@ export const getChannelPerformance = asyncHandler(
             orderBy: { channel: "asc" },
         });
 
-        const formattedStats = channelStats.reduce((acc: any, stat) => {
+        const formattedStats = channelStats.reduce((acc: any, stat: any) => {
             if (!acc[stat.channel]) {
                 acc[stat.channel] = {
                     channel: stat.channel,
@@ -306,14 +308,18 @@ export const getFailureAnalysis = asyncHandler(
 
         res.json(
             new CustomResponse(200, "Failure analysis retrieved", {
-                failureReasons: failureReasons.map((item) => ({
-                    reason: item.failureReason,
-                    count: item._count.id,
-                })),
-                failuresByChannel: failuresByChannel.map((item) => ({
-                    channel: item.channel,
-                    failures: item._count.id,
-                })),
+                failureReasons: failureReasons.map(
+                    (item: (typeof failureReasons)[0]) => ({
+                        reason: item.failureReason,
+                        count: item._count.id,
+                    })
+                ),
+                failuresByChannel: failuresByChannel.map(
+                    (item: (typeof failuresByChannel)[0]) => ({
+                        channel: item.channel,
+                        failures: item._count.id,
+                    })
+                ),
                 period: `${days} days`,
             })
         );
@@ -413,7 +419,7 @@ export const getTopTemplates = asyncHandler(
         });
 
         const templatesWithStats = await Promise.all(
-            topTemplates.map(async (template) => {
+            topTemplates.map(async (template: (typeof topTemplates)[0]) => {
                 const [total, delivered] = await Promise.all([
                     prisma.notification.count({
                         where: {

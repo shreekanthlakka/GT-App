@@ -1156,6 +1156,14 @@ enum LedgerType {
   INTEREST_EARNED         // Interest income
   INTEREST_PAID           // Interest expense
   CREDIT_LIMIT_CHANGE
+  PAYMENT_RECEIVED
+  PAYMENT_MADE
+
+  // New entries for enhanced functionality
+  TDS_DEDUCTED            // TDS deducted on payments
+  TDS_DEPOSITED           // TDS deposited to government
+  TDS_CREDIT_NOTE         // TDS credit note issued
+  TDS_DEBIT_NOTE          // TDS debit note received
 }
 
 enum ReminderType {

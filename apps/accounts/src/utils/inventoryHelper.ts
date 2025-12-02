@@ -79,7 +79,7 @@ export async function calculateInventoryValue(userId: string): Promise<{
         { value: number; quantity: number; count: number }
     > = {};
 
-    items.forEach((item) => {
+    items.forEach((item: (typeof items)[0]) => {
         const price = Number(item.costPrice) || Number(item.sellingPrice);
         const quantity = Number(item.currentStock);
         const itemValue = price * quantity;
@@ -129,7 +129,7 @@ export async function getLowStockCount(userId: string): Promise<{
     let critical = 0;
     let low = 0;
 
-    items.forEach((item) => {
+    items.forEach((item: (typeof items)[0]) => {
         const stock = Number(item.currentStock);
         const minStock = Number(item.minimumStock);
 

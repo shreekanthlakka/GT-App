@@ -81,7 +81,7 @@ export class TemplateService {
             where: { isActive: true },
         });
 
-        templates.forEach((template) => {
+        templates.forEach((template: any) => {
             this.templates.set(template.name, template);
         });
     }

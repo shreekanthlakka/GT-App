@@ -587,12 +587,12 @@ export const exportCustomerLedger = asyncHandler(
 
         // Import ledger service to get ledger data
         // const { LedgerService } = await import("../services/ledgerService");
-        const ledger = await LedgerService.getCustomerLedger(
-            userId,
-            customerId,
-            new Date(startDate as string),
-            new Date(endDate as string)
-        );
+        const ledger = await LedgerService.getCustomerLedger(customerId, {
+            dateRange: {
+                gte: new Date(startDate as string),
+                lte: new Date(endDate as string),
+            },
+        });
 
         if (format === "pdf") {
             const pdfBuffer = await ExportService.exportLedgerToPDF(
@@ -652,12 +652,12 @@ export const exportPartyLedger = asyncHandler(
         }
 
         // const { LedgerService } = await import("../services/ledgerService");
-        const ledger = await LedgerService.getPartyLedger(
-            userId,
-            partyId,
-            new Date(startDate as string),
-            new Date(endDate as string)
-        );
+        const ledger = await LedgerService.getPartyLedger(partyId, {
+            dateRange: {
+                gte: new Date(startDate as string),
+                lte: new Date(endDate as string),
+            },
+        });
 
         if (format === "pdf") {
             const pdfBuffer = await ExportService.exportLedgerToPDF(

@@ -315,10 +315,10 @@ export class EnhancedLedgerService {
                     customer.id
                 );
 
-                if (Math.abs(balance) > 0.01) {
+                if (Number(balance) > 0.01) {
                     accountBalances.set(customer.name, {
-                        debit: balance > 0 ? balance : 0,
-                        credit: balance < 0 ? Math.abs(balance) : 0,
+                        debit: Number(balance) > 0 ? Number(balance) : 0,
+                        credit: Number(balance) < 0 ? Number(balance) : 0,
                         type: "ASSET",
                     });
                 }
@@ -333,10 +333,10 @@ export class EnhancedLedgerService {
             for (const party of parties) {
                 const balance = await LedgerService.getPartyBalance(party.id);
 
-                if (Math.abs(balance) > 0.01) {
+                if (Number(balance) > 0.01) {
                     accountBalances.set(party.name, {
-                        debit: balance > 0 ? balance : 0,
-                        credit: balance < 0 ? Math.abs(balance) : 0,
+                        debit: Number(balance) > 0 ? Number(balance) : 0,
+                        credit: Number(balance) < 0 ? Number(balance) : 0,
                         type: "LIABILITY",
                     });
                 }
@@ -433,7 +433,7 @@ export class EnhancedLedgerService {
                 isBalanced: Math.abs(totalDebit - totalCredit) < 0.01,
                 generatedAt: new Date(),
             };
-        } catch (error) {
+        } catch (error: any) {
             logger.error(
                 "Failed to generate trial balance",
                 error,
@@ -554,7 +554,7 @@ export class EnhancedLedgerService {
                     Math.abs(totalAssets - totalLiabilitiesAndEquity) < 0.01,
                 generatedAt: new Date(),
             };
-        } catch (error) {
+        } catch (error: any) {
             logger.error(
                 "Failed to generate balance sheet",
                 error,
@@ -656,7 +656,7 @@ export class EnhancedLedgerService {
                 netProfitMargin,
                 generatedAt: new Date(),
             };
-        } catch (error) {
+        } catch (error: any) {
             logger.error(
                 "Failed to generate P&L statement",
                 error,
@@ -827,7 +827,7 @@ export class EnhancedLedgerService {
                 },
                 generatedAt: new Date(),
             };
-        } catch (error) {
+        } catch (error: any) {
             logger.error(
                 "Failed to generate GST report",
                 error,
@@ -909,7 +909,7 @@ export class EnhancedLedgerService {
                 },
                 generatedAt: new Date(),
             };
-        } catch (error) {
+        } catch (error: any) {
             logger.error(
                 "Failed to generate TDS report",
                 error,
@@ -968,7 +968,9 @@ export class EnhancedLedgerService {
             const bankTxnMap = new Map(
                 bankStatementTransactions.map((t, i) => [i, t])
             );
-            const ledgerMap = new Map(ledgerEntries.map((e, i) => [i, e]));
+            const ledgerMap = new Map(
+                ledgerEntries.map((e: LedgerEntry, i: number) => [i, e])
+            );
 
             for (const [ledgerIdx, ledgerEntry] of ledgerMap.entries()) {
                 let foundMatch = false;
@@ -1308,7 +1310,8 @@ export class EnhancedLedgerService {
         });
 
         return items.reduce(
-            (sum, item) => sum + item.currentStock * (item.costPrice || 0),
+            (sum: number, item: any) =>
+                sum + item.currentStock * (item.costPrice || 0),
             0
         );
     }
@@ -1327,7 +1330,10 @@ export class EnhancedLedgerService {
             },
         });
 
-        return entries.reduce((sum, e) => sum + e.debit - e.credit, 0);
+        return entries.reduce(
+            (sum: number, e: any) => sum + e.debit - e.credit,
+            0
+        );
     }
 
     private static async getTotalAccountsReceivable(
@@ -1343,8 +1349,8 @@ export class EnhancedLedgerService {
         let total = 0;
         for (const customer of customers) {
             const balance = await LedgerService.getCustomerBalance(customer.id);
-            if (balance > 0) {
-                total += balance;
+            if (Number(balance) > 0) {
+                total += Number(balance);
             }
         }
 
@@ -1364,8 +1370,8 @@ export class EnhancedLedgerService {
         let total = 0;
         for (const party of parties) {
             const balance = await LedgerService.getPartyBalance(party.id);
-            if (balance < 0) {
-                total += Math.abs(balance);
+            if (Number(balance) < 0) {
+                total += Number(balance);
             }
         }
 
