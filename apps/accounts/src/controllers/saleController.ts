@@ -227,7 +227,17 @@ export const createSale = asyncHandler(async (req, res) => {
         paidAmount: Number(sale.paidAmount),
         remainingAmount: Number(sale.remainingAmount),
         status: sale.status,
-        items: validatedItems,
+        items: validatedItems.map((item) => ({
+            name: item.itemName,
+            type: item.itemType,
+            design: item.design,
+            color: item.color,
+            price: item.price,
+            quantity: item.quantity,
+            total: item.total,
+            hsnCode: item.hsnCode,
+            // productId: item.productId,
+        })),
         taxAmount: Number(sale.taxAmount),
         discountAmount: Number(sale.discountAmount),
         salesPerson: sale.salesPerson,
@@ -467,7 +477,7 @@ export const updateSale = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    if (!userId) return;
+    if (!userId || !id) return;
 
     // Get existing sale
     const existingSale = await prisma.sale.findFirst({
@@ -571,8 +581,6 @@ export const updateSale = asyncHandler(async (req, res) => {
     );
     await saleUpdatedPublisher.publish({
         id: updatedSale.id,
-        voucherId: updatedSale.voucherId,
-        saleNo: updatedSale.saleNo,
         updatedAt: updatedSale.updatedAt.toISOString(),
         changes,
         updatedBy: userId,
@@ -582,6 +590,7 @@ export const updateSale = asyncHandler(async (req, res) => {
         customerName: updatedSale.customer.name,
         currentAmount: Number(updatedSale.amount),
         currentStatus: updatedSale.status,
+        customerId: updatedSale.customerId,
     });
 
     logger.info("Sale updated successfully", LogCategory.ACCOUNTS, {
@@ -679,8 +688,6 @@ export const cancelSale = asyncHandler(async (req, res) => {
     );
     await saleCancelledPublisher.publish({
         id: cancelledSale.id,
-        voucherId: cancelledSale.voucherId,
-        saleNo: cancelledSale.saleNo,
         customerId: cancelledSale.customerId,
         customerName: cancelledSale.customer.name,
         amount: Number(cancelledSale.amount),
@@ -688,7 +695,9 @@ export const cancelSale = asyncHandler(async (req, res) => {
         cancelledBy: userId,
         reason: reason || "No reason provided",
         hadPayments: Number(sale.paidAmount) > 0,
-        refundRequired: Number(sale.paidAmount),
+        refundAmount: Number(sale.paidAmount),
+        restockRequired: true,
+        saleNo: sale.saleNo,
     });
 
     logger.info("Sale cancelled successfully", LogCategory.ACCOUNTS, {

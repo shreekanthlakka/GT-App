@@ -141,7 +141,7 @@ export class ExportService {
 
     static async exportTrialBalanceToExcel(
         report: TrialBalanceReport
-    ): Promise<Buffer> {
+    ): Promise<ExcelJS.Buffer> {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Trial Balance");
 
@@ -212,7 +212,7 @@ export class ExportService {
                 : "✗ Trial Balance is NOT BALANCED",
         ]);
 
-        return (await workbook.xlsx.writeBuffer()) as Buffer;
+        return await workbook.xlsx.writeBuffer();
     }
 
     // ========================================
@@ -377,7 +377,7 @@ export class ExportService {
 
     static async exportBalanceSheetToExcel(
         report: BalanceSheetReport
-    ): Promise<Buffer> {
+    ): Promise<ExcelJS.Buffer> {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Balance Sheet");
 
@@ -447,7 +447,7 @@ export class ExportService {
         worksheet.getColumn(2).width = 20;
         worksheet.getColumn(2).numFmt = "#,##0.00";
 
-        return (await workbook.xlsx.writeBuffer()) as Buffer;
+        return await workbook.xlsx.writeBuffer();
     }
 
     // ========================================
@@ -595,7 +595,7 @@ export class ExportService {
 
     static async exportProfitLossToExcel(
         report: ProfitLossReport
-    ): Promise<Buffer> {
+    ): Promise<ExcelJS.Buffer> {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Profit & Loss");
 
@@ -609,7 +609,7 @@ export class ExportService {
 
         // Add data rows...
 
-        return (await workbook.xlsx.writeBuffer()) as Buffer;
+        return await workbook.xlsx.writeBuffer();
     }
 
     // ========================================
@@ -710,7 +710,9 @@ export class ExportService {
         });
     }
 
-    static async exportGSTReportToExcel(report: GSTReport): Promise<Buffer> {
+    static async exportGSTReportToExcel(
+        report: GSTReport
+    ): Promise<ExcelJS.Buffer> {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("GST Report");
 
@@ -720,7 +722,7 @@ export class ExportService {
 
         // Add monthly data...
 
-        return (await workbook.xlsx.writeBuffer()) as Buffer;
+        return await workbook.xlsx.writeBuffer();
     }
 
     // ========================================
@@ -795,7 +797,9 @@ export class ExportService {
         });
     }
 
-    static async exportTDSReportToExcel(report: TDSReport): Promise<Buffer> {
+    static async exportTDSReportToExcel(
+        report: TDSReport
+    ): Promise<ExcelJS.Buffer> {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("TDS Report");
 
@@ -829,7 +833,7 @@ export class ExportService {
             ]);
         }
 
-        return (await workbook.xlsx.writeBuffer()) as Buffer;
+        return await workbook.xlsx.writeBuffer();
     }
 
     // ========================================
@@ -921,14 +925,14 @@ export class ExportService {
 
     static async exportBankReconciliationToExcel(
         report: BankReconciliationReport
-    ): Promise<Buffer> {
+    ): Promise<ExcelJS.Buffer> {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Bank Reconciliation");
 
         worksheet.addRow(["Bank Reconciliation Statement"]);
         // Add data...
 
-        return (await workbook.xlsx.writeBuffer()) as Buffer;
+        return await workbook.xlsx.writeBuffer();
     }
 
     // ========================================
@@ -1037,7 +1041,7 @@ export class ExportService {
     static async exportLedgerToExcel(
         ledger: any,
         type: "customer" | "party"
-    ): Promise<Buffer> {
+    ): Promise<ExcelJS.Buffer> {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Ledger");
 
@@ -1047,7 +1051,7 @@ export class ExportService {
 
         // Add ledger data...
 
-        return (await workbook.xlsx.writeBuffer()) as Buffer;
+        return await workbook.xlsx.writeBuffer();
     }
 
     // ========================================

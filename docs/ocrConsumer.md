@@ -1,3 +1,4 @@
+```typescript
 // apps/accounts/src/events/consumers/ocrConsumers.ts
 // ENHANCED VERSION WITH INVENTORY MANAGEMENT
 
@@ -16,12 +17,7 @@ import {
     StockAddedPublisher,
 } from "../publishers/inventoryPublishers";
 import { kafkaWrapper } from "@repo/common-backend/kafka";
-import {
-    generateInvoiceVoucherId,
-    generateInvoicePaymentVoucherId,
-    generateSaleReceiptVoucherId,
-} from "@repo/common-backend/utils";
-import { Prisma } from "@repo/db";
+import { generateInvoiceVoucherId } from "@repo/common-backend/utils";
 
 // ========================================
 // 1. AUTO-CREATE INVOICE WITH INVENTORY (Confidence ≥ 90%)
@@ -120,25 +116,6 @@ export class OCRJobCompletedConsumer extends KafkaConsumer<OCRJobCompletedEvent>
             const invoiceCreatedPublisher = new InvoiceCreatedPublisher(
                 kafkaWrapper.producer
             );
-
-            // Format items for event
-            const eventItems =
-                (invoice.items as any[])?.map((item) => ({
-                    name: item.name,
-                    description: item.description,
-                    quantity: item.quantity,
-                    unit: item.unit,
-                    unitPrice: item.unitPrice,
-                    totalPrice: item.totalPrice,
-                    hsnCode: item.hsnCode,
-                    taxRate: item.taxRate,
-                    taxAmount: item.taxAmount,
-                    discountAmount: item.discountAmount,
-                    inventoryItemId: item.inventoryItemId,
-                    sku: item.sku,
-                    barcode: item.barcode,
-                })) || [];
-
             await invoiceCreatedPublisher.publish({
                 id: invoice.id,
                 voucherId: invoice.voucherId,
@@ -146,27 +123,17 @@ export class OCRJobCompletedConsumer extends KafkaConsumer<OCRJobCompletedEvent>
                 date: invoice.date.toISOString(),
                 dueDate: invoice.dueDate?.toISOString(),
                 amount: Number(invoice.amount),
-                paidAmount: 0,
                 remainingAmount: Number(invoice.remainingAmount),
-                status: invoice.status as any,
                 partyId: invoice.partyId,
                 partyName: invoice.party?.name || "Unknown",
+                items: invoice.items as any,
+                status: invoice.status,
                 createdBy: invoice.userId,
                 createdAt: invoice.createdAt.toISOString(),
-                userId: invoice.userId,
-
-                // ✨ Include items
-                items: eventItems,
-                itemCount: eventItems.length,
-                totalQuantity: eventItems.reduce(
-                    (sum, item) => sum + item.quantity,
-                    0
-                ),
-
-                // ✨ Include OCR metadata
                 autoCreatedFromOCR: true,
                 ocrJobId: ocrData.id,
                 ocrConfidence: data.confidence,
+                userId: ocrData.userId,
             });
 
             logger.info(
@@ -254,6 +221,8 @@ export class OCRJobCompletedConsumer extends KafkaConsumer<OCRJobCompletedEvent>
             ocrId
         );
 
+        // 3. Generate voucher ID
+
         // 4. Calculate due date (30 days default)
         const invoiceDate = processedData.date
             ? new Date(processedData.date)
@@ -261,11 +230,7 @@ export class OCRJobCompletedConsumer extends KafkaConsumer<OCRJobCompletedEvent>
         const dueDate = new Date(invoiceDate);
         dueDate.setDate(dueDate.getDate() + 30);
 
-        // 3. Generate voucher ID using proper format
-        const voucherId = await generateInvoiceVoucherId(
-            party.name,
-            invoiceDate
-        );
+        const voucherId = generateInvoiceVoucherId(party.name, invoiceDate);
 
         // 5. Create invoice with processed items
         const invoice = await prisma.invoice.create({
@@ -452,9 +417,9 @@ export class OCRJobCompletedConsumer extends KafkaConsumer<OCRJobCompletedEvent>
                 unit: itemData.unit || "PCS",
                 currentStock: 0, // Will be updated when stock is added
                 minimumStock: 10, // Default minimum
-                costPrice: itemData.unitPrice || itemData.rate || 0,
+                purchasePrice: itemData.unitPrice || itemData.rate || 0,
                 sellingPrice:
-                    itemData.sellingPrice || (itemData.unitPrice || 0) * 1.3, // 20% markup
+                    itemData.sellingPrice || (itemData.unitPrice || 0) * 1.2, // 20% markup
                 hsnCode: itemData.hsnCode,
                 taxRate: itemData.taxRate || 0,
                 userId,
@@ -469,10 +434,10 @@ export class OCRJobCompletedConsumer extends KafkaConsumer<OCRJobCompletedEvent>
         await inventoryCreatedPublisher.publish({
             id: inventoryItem.id,
             name: inventoryItem.name,
-            sku: inventoryItem.sku || undefined,
+            sku: inventoryItem.sku,
             category: inventoryItem.category,
             unit: inventoryItem.unit,
-            costPrice: Number(inventoryItem.costPrice),
+            purchasePrice: Number(inventoryItem.purchasePrice),
             sellingPrice: Number(inventoryItem.sellingPrice),
             currentStock: Number(inventoryItem.currentStock),
             minimumStock: Number(inventoryItem.minimumStock),
@@ -519,36 +484,34 @@ export class OCRJobCompletedConsumer extends KafkaConsumer<OCRJobCompletedEvent>
                 const newStock = previousStock + item.quantity;
 
                 // Update inventory stock
-                await prisma.$transaction(
-                    async (tx: Prisma.TransactionClient) => {
-                        // Update stock
-                        await tx.inventoryItem.update({
-                            where: { id: item.inventoryItemId },
-                            data: {
-                                currentStock: { increment: item.quantity },
-                                lastPurchaseDate: new Date(),
-                                lastPurchasePrice: item.unitPrice,
-                                updatedAt: new Date(),
-                            },
-                        });
+                await prisma.$transaction(async (tx) => {
+                    // Update stock
+                    await tx.inventoryItem.update({
+                        where: { id: item.inventoryItemId },
+                        data: {
+                            currentStock: { increment: item.quantity },
+                            lastPurchaseDate: new Date(),
+                            lastPurchasePrice: item.unitPrice,
+                            updatedAt: new Date(),
+                        },
+                    });
 
-                        // Create stock movement
-                        await tx.stockMovement.create({
-                            data: {
-                                inventoryItemId: item.inventoryItemId,
-                                type: "IN",
-                                quantity: item.quantity,
-                                previousStock,
-                                newStock,
-                                reason: "Purchase from supplier",
-                                reference: invoiceId,
-                                unitPrice: item.unitPrice,
-                                totalValue: item.unitPrice * item.quantity,
-                                userId,
-                            },
-                        });
-                    }
-                );
+                    // Create stock movement
+                    await tx.stockMovement.create({
+                        data: {
+                            inventoryItemId: item.inventoryItemId,
+                            type: "IN",
+                            quantity: item.quantity,
+                            previousStock,
+                            newStock,
+                            reason: "Purchase from supplier",
+                            reference: invoiceId,
+                            unitPrice: item.unitPrice,
+                            totalValue: item.unitPrice * item.quantity,
+                            userId,
+                        },
+                    });
+                });
 
                 // Publish stock added event
                 const stockAddedPublisher = new StockAddedPublisher(
@@ -651,7 +614,7 @@ export class OCRManualReviewConsumer extends KafkaConsumer<OCRManualReviewRequir
             // ========================================
             // GENERATE REVIEW LINK
             // ========================================
-            const reviewLink = `${process.env.FRONTEND_URL}/ocr/${data.jobId}/review`;
+            const reviewLink = `${process.env.FRONTEND_URL}/ocr/review/${data.jobId}`;
 
             // Update OCR with review link
             await prisma.oCRData.update({
@@ -721,3 +684,4 @@ export const ocrConsumers = {
     OCRJobCompletedConsumer,
     OCRManualReviewConsumer,
 };
+```

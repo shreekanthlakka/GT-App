@@ -2,7 +2,7 @@ import { prisma } from "@repo/db/prisma";
 import { logger, LogCategory } from "@repo/common-backend/logger";
 import { CustomError } from "@repo/common-backend/utils";
 import {
-    StockMovementCreatedPublisher,
+    // StockMovementCreatedPublisher,
     LowStockAlertPublisher,
 } from "../events/publishers/inventoryPublishers";
 import { kafkaWrapper } from "@repo/common-backend/kafka";
@@ -65,7 +65,7 @@ export class InventoryService {
                 );
                 await lowStockPublisher.publish({
                     inventoryItemId: item.id,
-                    itemName: item.name,
+                    inventoryItemName: item.name,
                     sku: item.sku,
                     currentStock: newStock,
                     minimumStock: Number(item.minimumStock),
@@ -75,7 +75,10 @@ export class InventoryService {
                     category: item.category,
                     alertLevel: newStock === 0 ? "OUT_OF_STOCK" : "LOW_STOCK",
                     userId,
-                    detectedAt: new Date().toISOString(),
+                    alertTriggeredAt: new Date().toISOString(),
+                    customerImpact: newStock === 0 ? "HIGH" : "MEDIUM",
+                    shortageQuantity: Number(item.minimumStock) - newStock,
+                    unit: item.unit,
                 });
             }
         });

@@ -50,6 +50,15 @@ export interface SaleCreatedEvent extends BaseEvent {
         vehicleNo?: string;
         createdBy?: string;
         createdAt: string;
+        customerPhone?: string;
+        customerEmail?: string;
+        userId: string;
+        creditLimitExceeded?: boolean;
+        businessMetrics?: {
+            itemCount?: number;
+            averageItemValue?: number;
+            paymentStatus?: string;
+        };
     };
 }
 
@@ -71,6 +80,11 @@ export interface SaleUpdatedEvent extends BaseEvent {
         paymentUpdated?: boolean;
         itemsModified?: boolean;
         deliveryUpdated?: boolean;
+        customerName?: string;
+        currentAmount?: number;
+        currentStatus?: string;
+        amountChanged?: boolean;
+        amountDifference?: number;
     };
 }
 
@@ -110,6 +124,8 @@ export interface SaleCancelledEvent extends BaseEvent {
         refundAmount?: number;
         restockRequired: boolean;
         customerNotified?: boolean;
+        inventoryRestored?: boolean;
+        hadPayments?: boolean;
     };
 }
 

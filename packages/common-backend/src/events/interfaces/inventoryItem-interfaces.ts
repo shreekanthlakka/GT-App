@@ -1873,7 +1873,7 @@ export interface StockLowEvent extends BaseEvent {
         lastPurchasePrice?: number;
 
         // Alert metadata
-        alertLevel: "LOW" | "CRITICAL";
+        alertLevel: "LOW" | "CRITICAL" | "OUT_OF_STOCK" | "LOW_STOCK";
         alertTriggeredAt: string;
         previousAlertDate?: string;
 

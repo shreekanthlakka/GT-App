@@ -382,18 +382,18 @@ export const updateParty = asyncHandler(async (req, res) => {
     });
 
     // Log credit limit change if changed
-    if (
-        updateData.creditLimit &&
-        updateData.creditLimit !== existingParty.creditLimit
-    ) {
-        await LedgerService.logCreditLimitChange({
-            partyId: id,
-            oldLimit: Number(existingParty.creditLimit),
-            newLimit: Number(updateData.creditLimit),
-            userId,
-            reason: "Manual update via party management",
-        });
-    }
+    // if (
+    //     updateData.creditLimit &&
+    //     updateData.creditLimit !== existingParty.creditLimit
+    // ) {
+    //     await LedgerService.logCreditLimitChange({
+    //         partyId: id,
+    //         oldLimit: Number(existingParty.creditLimit),
+    //         newLimit: Number(updateData.creditLimit),
+    //         userId,
+    //         reason: "Manual update via party management",
+    //     });
+    // }
 
     // Calculate changes for event
     const changes: Record<string, { oldValue: any; newValue: any }> = {};

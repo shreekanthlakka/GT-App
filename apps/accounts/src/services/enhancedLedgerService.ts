@@ -965,10 +965,12 @@ export class EnhancedLedgerService {
             const unmatchedInBooks: BankTransaction[] = [];
             const unmatchedInBank: BankTransaction[] = [];
 
-            const bankTxnMap = new Map(
-                bankStatementTransactions.map((t, i) => [i, t])
-            );
-            const ledgerMap = new Map(
+            const bankTxnMap = new Map<
+                number,
+                (typeof bankStatementTransactions)[0]
+            >(bankStatementTransactions.map((t, i) => [i, t]));
+
+            const ledgerMap = new Map<number, LedgerEntry>(
                 ledgerEntries.map((e: LedgerEntry, i: number) => [i, e])
             );
 
@@ -977,8 +979,10 @@ export class EnhancedLedgerService {
 
                 for (const [bankIdx, bankTxn] of bankTxnMap.entries()) {
                     const amountMatches =
-                        Math.abs(ledgerEntry.debit - bankTxn.debit) < 0.01 ||
-                        Math.abs(ledgerEntry.credit - bankTxn.credit) < 0.01;
+                        Math.abs(Number(ledgerEntry.debit) - bankTxn.debit) <
+                            0.01 ||
+                        Math.abs(Number(ledgerEntry.credit) - bankTxn.credit) <
+                            0.01;
 
                     const dateMatches =
                         Math.abs(
@@ -990,9 +994,9 @@ export class EnhancedLedgerService {
                         matched.push({
                             date: ledgerEntry.date,
                             description: ledgerEntry.description || "",
-                            debit: ledgerEntry.debit,
-                            credit: ledgerEntry.credit,
-                            balance: ledgerEntry.balance,
+                            debit: Number(ledgerEntry.debit),
+                            credit: Number(ledgerEntry.credit),
+                            balance: Number(ledgerEntry.balance),
                             bankBalance: bankTxn.balance,
                             matched: true,
                             ledgerEntryId: ledgerEntry.id,
@@ -1008,9 +1012,9 @@ export class EnhancedLedgerService {
                     unmatchedInBooks.push({
                         date: ledgerEntry.date,
                         description: ledgerEntry.description || "",
-                        debit: ledgerEntry.debit,
-                        credit: ledgerEntry.credit,
-                        balance: ledgerEntry.balance,
+                        debit: Number(ledgerEntry.debit),
+                        credit: Number(ledgerEntry.credit),
+                        balance: Number(ledgerEntry.balance),
                         bankBalance: 0,
                         matched: false,
                         ledgerEntryId: ledgerEntry.id,
