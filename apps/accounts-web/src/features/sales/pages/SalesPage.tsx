@@ -130,7 +130,7 @@ export const SalesPage = () => {
                         {data?.data.map((sale) => (
                             <tr key={sale.id}>
                                 <td className="font-medium">{sale.saleNo}</td>
-                                <td>{sale.customer.name}</td>
+                                <td>{sale.customer?.name}</td>
                                 <td>
                                     {new Date(sale.date).toLocaleDateString()}
                                 </td>

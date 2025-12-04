@@ -423,7 +423,11 @@ export const InvoiceForm = ({
 
             {/* Submit Button */}
             <div className="flex justify-end gap-4">
-                <Button type="submit" disabled={isLoading} loading={isLoading}>
+                <Button
+                    type="submit"
+                    disabled={isLoading}
+                    isLoading={isLoading}
+                >
                     {initialData ? "Update Invoice" : "Create Invoice"}
                 </Button>
             </div>

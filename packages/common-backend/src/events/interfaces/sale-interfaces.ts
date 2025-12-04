@@ -169,6 +169,8 @@ export interface SalePaidEvent extends BaseEvent {
         receiptGenerated: boolean;
         receiptNumber?: string;
         paidAt: string;
+        daysToPayment?: number;
+        userId?: string;
     };
 }
 

@@ -981,3 +981,627 @@ export const getOverdueSales = asyncHandler(async (req, res) => {
     );
     res.status(response.statusCode).json(response);
 });
+
+/**
+ * ===============================================================================================
+ *      #################### DELETE SALE ######################
+ * ================================================================================================
+ */
+
+export const deleteSale = asyncHandler(async (req, res) => {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+
+    if (!userId) return;
+
+    const sale = await prisma.sale.findFirst({
+        where: { id, userId },
+        include: {
+            customer: { select: { name: true } },
+            saleReceipts: true,
+            ledger: true,
+        },
+    });
+
+    if (!sale) {
+        throw new CustomError(404, "Sale not found");
+    }
+
+    // Don't allow deletion of sales with payments
+    if (sale.saleReceipts && sale.saleReceipts.length > 0) {
+        throw new CustomError(
+            400,
+            "Cannot delete sale with receipts. Please delete receipts first or cancel the sale."
+        );
+    }
+
+    // Don't allow deletion of paid sales
+    if (Number(sale.paidAmount) > 0) {
+        throw new CustomError(
+            400,
+            "Cannot delete sale with payments. Please cancel the sale instead."
+        );
+    }
+
+    // Delete sale in transaction
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        // Delete related ledger entries
+        if (sale.ledger && sale.ledger.length > 0) {
+            await tx.ledgerEntry.deleteMany({
+                where: {
+                    reference: sale.id,
+                    // referenceType: "SALE",
+                },
+            });
+        }
+
+        // Delete the sale
+        await tx.sale.delete({
+            where: { id },
+        });
+    });
+
+    // Audit log
+    logger.audit("DELETE", "Sale", id, userId, sale, null, {
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+    });
+
+    // Note: Consider publishing a SaleDeletedEvent if needed
+    logger.info("Sale deleted successfully", LogCategory.ACCOUNTS, {
+        saleId: id,
+        saleNo: sale.saleNo,
+        customerId: sale.customerId,
+        amount: Number(sale.amount),
+        userId,
+    });
+
+    const response = new CustomResponse(200, "Sale deleted successfully", {
+        deletedSaleId: id,
+        saleNo: sale.saleNo,
+    });
+    res.status(response.statusCode).json(response);
+});
+
+/**
+ * ===============================================================================================
+ *      #################### MARK SALE AS PAID ######################
+ * ================================================================================================
+ */
+
+export const markSaleAsPaid = asyncHandler(async (req, res) => {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+    const { paidDate, paidAmount, paymentMethod, receiptNumber, notes } =
+        req.body;
+
+    if (!userId) return;
+
+    const sale = await prisma.sale.findFirst({
+        where: { id, userId },
+        include: {
+            customer: {
+                select: { name: true, phone: true, email: true },
+            },
+        },
+    });
+
+    if (!sale) {
+        throw new CustomError(404, "Sale not found");
+    }
+
+    if (sale.status === "CANCELLED") {
+        throw new CustomError(400, "Cannot mark cancelled sale as paid");
+    }
+
+    if (sale.status === "PAID") {
+        throw new CustomError(400, "Sale is already marked as paid");
+    }
+
+    const remainingAmount = Number(sale.remainingAmount);
+    const paymentAmount = paidAmount || remainingAmount;
+
+    if (paymentAmount > remainingAmount) {
+        throw new CustomError(
+            400,
+            `Payment amount (${paymentAmount}) cannot exceed remaining amount (${remainingAmount})`
+        );
+    }
+
+    const paymentDate = paidDate ? new Date(paidDate) : new Date();
+    const method = paymentMethod || "CASH";
+
+    // Mark sale as paid in transaction
+    const result = await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+            // Create sale receipt
+            const receipt = await tx.saleReceipt.create({
+                data: {
+                    voucherId: await generateVoucherId("SR", userId),
+                    receiptNo: receiptNumber || `SR-${Date.now()}`,
+                    customerId: sale.customerId,
+                    saleId: sale.id,
+                    amount: paymentAmount,
+                    date: paymentDate,
+                    method: method as any,
+                    description: notes || `Payment for sale ${sale.saleNo}`,
+                    userId,
+                },
+            });
+
+            // Update sale
+            const newPaidAmount = Number(sale.paidAmount) + paymentAmount;
+            const newRemainingAmount = Number(sale.amount) - newPaidAmount;
+            const newStatus =
+                newRemainingAmount <= 0
+                    ? "PAID"
+                    : newPaidAmount > 0
+                      ? "PARTIALLY_PAID"
+                      : "PENDING";
+
+            const updatedSale = await tx.sale.update({
+                where: { id },
+                data: {
+                    paidAmount: newPaidAmount,
+                    remainingAmount: newRemainingAmount,
+                    status: newStatus,
+                },
+                include: {
+                    customer: {
+                        select: { name: true, phone: true, email: true },
+                    },
+                },
+            });
+
+            // Create ledger entry for payment received (Credit)
+            // await LedgerService.createPaymentReceivedEntry({
+            //     receiptId: receipt.id,
+            //     customerId: sale.customerId,
+            //     amount: paymentAmount,
+            //     description: `Payment received for sale ${sale.saleNo}`,
+            //     userId,
+            //     date: paymentDate,
+            // });
+            await LedgerService.createPaymentReceivedEntry({
+                paymentId: receipt.id,
+                customerId: sale.customerId,
+                amount: paymentAmount,
+                description: `Payment received for sale ${sale.saleNo}`,
+                userId,
+                date: paymentDate,
+            });
+
+            return { updatedSale, receipt };
+        }
+    );
+
+    // Audit log
+    logger.audit(
+        "UPDATE",
+        "Sale",
+        id,
+        userId,
+        { status: sale.status, paidAmount: sale.paidAmount },
+        {
+            status: result.updatedSale.status,
+            paidAmount: result.updatedSale.paidAmount,
+        },
+        {
+            ipAddress: req.ip,
+            userAgent: req.headers["user-agent"],
+            action: "MARK_PAID",
+        }
+    );
+
+    // Publish sale paid event if fully paid
+    if (result.updatedSale.status === "PAID") {
+        const salePaidPublisher = new SalePaidPublisher(kafkaWrapper.producer);
+        await salePaidPublisher.publish({
+            saleId: result.updatedSale.id,
+            saleNo: result.updatedSale.saleNo,
+            customerId: result.updatedSale.customerId,
+            customerName: result.updatedSale.customer.name,
+            amount: Number(result.updatedSale.amount),
+            // amount: Number(result.updatedSale.paidAmount),
+            paymentDate: paymentDate.toISOString(),
+            paymentMethod: method,
+            isFullPayment: true,
+            daysToPayment: Math.floor(
+                (paymentDate.getTime() - sale.date.getTime()) /
+                    (1000 * 60 * 60 * 24)
+            ),
+            receiptGenerated: true,
+            paymentId: result.receipt.id,
+            paidAt: paymentDate.toISOString(),
+            userId,
+            receiptNumber: result.receipt.receiptNumber,
+        });
+    }
+
+    logger.info("Sale marked as paid successfully", LogCategory.ACCOUNTS, {
+        saleId: id,
+        saleNo: sale.saleNo,
+        paymentAmount,
+        newStatus: result.updatedSale.status,
+        userId,
+    });
+
+    const response = new CustomResponse(
+        200,
+        "Sale marked as paid successfully",
+        {
+            sale: result.updatedSale,
+            receipt: result.receipt,
+        }
+    );
+    res.status(response.statusCode).json(response);
+});
+
+/**
+ * ===============================================================================================
+ *      #################### GET SALES SUMMARY ######################
+ * ================================================================================================
+ */
+
+export const getSalesSummary = asyncHandler(async (req, res) => {
+    const userId = req.user?.userId;
+    const { startDate, endDate, customerId, partyId, paymentStatus, groupBy } =
+        req.query;
+
+    if (!userId) return;
+
+    const start = startDate
+        ? new Date(startDate as string)
+        : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const end = endDate ? new Date(endDate as string) : new Date();
+
+    const whereClause: any = {
+        userId,
+        date: { gte: start, lte: end },
+    };
+
+    if (customerId) {
+        whereClause.customerId = customerId;
+    }
+
+    if (paymentStatus) {
+        whereClause.status = paymentStatus;
+    }
+
+    // Overall summary
+    const [totalStats, statusBreakdown, paymentMethodStats] = await Promise.all(
+        [
+            // Total statistics
+            prisma.sale.aggregate({
+                where: whereClause,
+                _sum: {
+                    amount: true,
+                    paidAmount: true,
+                    remainingAmount: true,
+                    taxAmount: true,
+                    discountAmount: true,
+                },
+                _count: true,
+                _avg: { amount: true },
+            }),
+
+            // Status breakdown
+            prisma.sale.groupBy({
+                by: ["status"],
+                where: whereClause,
+                _sum: { amount: true, paidAmount: true, remainingAmount: true },
+                _count: true,
+            }),
+
+            // Payment method analysis from receipts
+            prisma.saleReceipt.groupBy({
+                by: ["method"],
+                where: {
+                    userId,
+                    date: { gte: start, lte: end },
+                    ...(customerId && { customerId }),
+                },
+                _sum: { amount: true },
+                _count: true,
+            }),
+        ]
+    );
+
+    // Grouping based on request
+    let groupedData: any[] = [];
+    if (groupBy === "day" || groupBy === "week" || groupBy === "month") {
+        const dateFormat =
+            groupBy === "day" ? "day" : groupBy === "week" ? "week" : "month";
+
+        groupedData = await prisma.sale.groupBy({
+            by: ["date"],
+            where: whereClause,
+            _sum: { amount: true, paidAmount: true, remainingAmount: true },
+            _count: true,
+            orderBy: { date: "asc" },
+        });
+    } else if (groupBy === "customer") {
+        groupedData = await prisma.sale.groupBy({
+            by: ["customerId"],
+            where: whereClause,
+            _sum: { amount: true, paidAmount: true, remainingAmount: true },
+            _count: true,
+            orderBy: { _sum: { amount: "desc" } },
+        });
+
+        // Get customer details
+        const customerIds = groupedData.map((g: any) => g.customerId);
+        const customers = await prisma.customer.findMany({
+            where: { id: { in: customerIds } },
+            select: { id: true, name: true },
+        });
+
+        groupedData = groupedData.map((g: any) => ({
+            ...g,
+            customerName:
+                customers.find(
+                    (c: (typeof customers)[0]) => c.id === g.customerId
+                )?.name || "Unknown",
+        }));
+    }
+
+    // Calculate trends
+    const collectionRate = totalStats._sum.amount
+        ? ((Number(totalStats._sum.paidAmount) || 0) /
+              Number(totalStats._sum.amount)) *
+          100
+        : 0;
+
+    const response = new CustomResponse(
+        200,
+        "Sales summary retrieved successfully",
+        {
+            period: {
+                startDate: start.toISOString(),
+                endDate: end.toISOString(),
+            },
+            summary: {
+                totalSales: Number(totalStats._sum.amount) || 0,
+                totalPaid: Number(totalStats._sum.paidAmount) || 0,
+                totalOutstanding: Number(totalStats._sum.remainingAmount) || 0,
+                totalTax: Number(totalStats._sum.taxAmount) || 0,
+                totalDiscount: Number(totalStats._sum.discountAmount) || 0,
+                saleCount: totalStats._count,
+                averageSaleValue: Number(totalStats._avg.amount) || 0,
+                collectionRate: Math.round(collectionRate * 100) / 100,
+            },
+            statusBreakdown: statusBreakdown.map((sb: any) => ({
+                status: sb.status,
+                count: sb._count,
+                totalAmount: Number(sb._sum.amount) || 0,
+                paidAmount: Number(sb._sum.paidAmount) || 0,
+                outstandingAmount: Number(sb._sum.remainingAmount) || 0,
+            })),
+            paymentMethods: paymentMethodStats.map((pm: any) => ({
+                method: pm.method,
+                count: pm._count,
+                totalAmount: Number(pm._sum.amount) || 0,
+            })),
+            ...(groupedData.length > 0 && { groupedData }),
+        }
+    );
+    res.status(response.statusCode).json(response);
+});
+
+/**
+ * ===============================================================================================
+ *      #################### GET SALES PERFORMANCE ######################
+ * ================================================================================================
+ */
+
+export const getSalesPerformance = asyncHandler(async (req, res) => {
+    const userId = req.user?.userId;
+    const { startDate, endDate, compareWithPrevious } = req.query;
+
+    if (!userId) return;
+
+    const start = startDate
+        ? new Date(startDate as string)
+        : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const end = endDate ? new Date(endDate as string) : new Date();
+
+    const whereClause: any = {
+        userId,
+        date: { gte: start, lte: end },
+        status: { not: "CANCELLED" },
+    };
+
+    // Current period statistics
+    const [currentStats, topPerformers, itemPerformance, customerMetrics] =
+        await Promise.all([
+            // Overall performance
+            prisma.sale.aggregate({
+                where: whereClause,
+                _sum: {
+                    amount: true,
+                    paidAmount: true,
+                    remainingAmount: true,
+                    taxAmount: true,
+                    discountAmount: true,
+                },
+                _count: true,
+                _avg: { amount: true },
+            }),
+
+            // Top performing sales persons
+            prisma.sale.groupBy({
+                by: ["salesPerson"],
+                where: {
+                    ...whereClause,
+                    salesPerson: { not: null },
+                },
+                _sum: { amount: true, paidAmount: true },
+                _count: true,
+                orderBy: { _sum: { amount: "desc" } },
+                take: 10,
+            }),
+
+            // Item-level performance
+            prisma.sale.findMany({
+                where: whereClause,
+                select: { items: true, amount: true, status: true },
+            }),
+
+            // Customer acquisition and retention
+            prisma.customer.count({
+                where: {
+                    userId,
+                    createdAt: { gte: start, lte: end },
+                },
+            }),
+        ]);
+
+    // Analyze item performance from JSON data
+    const itemStats: Record<
+        string,
+        {
+            totalSales: number;
+            totalQuantity: number;
+            totalValue: number;
+            avgPrice: number;
+        }
+    > = {};
+
+    itemPerformance.forEach((sale: (typeof itemPerformance)[0]) => {
+        if (sale.items && Array.isArray(sale.items)) {
+            (sale.items as any[]).forEach((item) => {
+                const key = `${item.itemName}_${item.itemType || ""}_${item.color || ""}`;
+                if (!itemStats[key]) {
+                    itemStats[key] = {
+                        totalSales: 0,
+                        totalQuantity: 0,
+                        totalValue: 0,
+                        avgPrice: 0,
+                    };
+                }
+                itemStats[key].totalSales += 1;
+                itemStats[key].totalQuantity += Number(item.quantity || 0);
+                itemStats[key].totalValue += Number(item.total || 0);
+            });
+        }
+    });
+
+    // Calculate average prices
+    Object.keys(itemStats).forEach((key) => {
+        const stats = itemStats[key];
+        stats.avgPrice =
+            stats.totalQuantity > 0
+                ? stats.totalValue / stats.totalQuantity
+                : 0;
+    });
+
+    const topSellingItems = Object.entries(itemStats)
+        .sort(([, a], [, b]) => b.totalValue - a.totalValue)
+        .slice(0, 10)
+        .map(([itemKey, stats]) => {
+            const [itemName, itemType, color] = itemKey.split("_");
+            return {
+                itemName,
+                itemType: itemType || null,
+                color: color || null,
+                ...stats,
+            };
+        });
+
+    // Previous period comparison (if requested)
+    let comparison = null;
+    if (compareWithPrevious === "true") {
+        const periodDiff = end.getTime() - start.getTime();
+        const prevStart = new Date(start.getTime() - periodDiff);
+        const prevEnd = new Date(start.getTime() - 1);
+
+        const prevStats = await prisma.sale.aggregate({
+            where: {
+                userId,
+                date: { gte: prevStart, lte: prevEnd },
+                status: { not: "CANCELLED" },
+            },
+            _sum: { amount: true, paidAmount: true },
+            _count: true,
+        });
+
+        const currentTotal = Number(currentStats._sum.amount) || 0;
+        const prevTotal = Number(prevStats._sum.amount) || 0;
+
+        comparison = {
+            previousPeriod: {
+                startDate: prevStart.toISOString(),
+                endDate: prevEnd.toISOString(),
+                totalSales: prevTotal,
+                saleCount: prevStats._count,
+            },
+            growth: {
+                salesGrowth:
+                    prevTotal > 0
+                        ? ((currentTotal - prevTotal) / prevTotal) * 100
+                        : 100,
+                volumeGrowth:
+                    prevStats._count > 0
+                        ? ((currentStats._count - prevStats._count) /
+                              prevStats._count) *
+                          100
+                        : 100,
+            },
+        };
+    }
+
+    // Calculate key performance indicators
+    const kpis = {
+        averageDailySales:
+            Math.ceil(
+                (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+            ) > 0
+                ? Number(currentStats._sum.amount) /
+                  Math.ceil(
+                      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+                  )
+                : 0,
+        averageTransactionValue: Number(currentStats._avg.amount) || 0,
+        collectionEfficiency: currentStats._sum.amount
+            ? ((Number(currentStats._sum.paidAmount) || 0) /
+                  Number(currentStats._sum.amount)) *
+              100
+            : 0,
+        discountRate: currentStats._sum.amount
+            ? ((Number(currentStats._sum.discountAmount) || 0) /
+                  Number(currentStats._sum.amount)) *
+              100
+            : 0,
+        newCustomersAcquired: customerMetrics,
+    };
+
+    const response = new CustomResponse(
+        200,
+        "Sales performance retrieved successfully",
+        {
+            period: {
+                startDate: start.toISOString(),
+                endDate: end.toISOString(),
+            },
+            overview: {
+                totalSales: Number(currentStats._sum.amount) || 0,
+                totalPaid: Number(currentStats._sum.paidAmount) || 0,
+                totalOutstanding:
+                    Number(currentStats._sum.remainingAmount) || 0,
+                saleCount: currentStats._count,
+            },
+            kpis,
+            topPerformers: topPerformers.map((tp: any) => ({
+                salesPerson: tp.salesPerson,
+                totalSales: Number(tp._sum.amount) || 0,
+                totalCollected: Number(tp._sum.paidAmount) || 0,
+                saleCount: tp._count,
+                averageSaleValue:
+                    tp._count > 0 ? Number(tp._sum.amount) / tp._count : 0,
+            })),
+            topSellingItems,
+            ...(comparison && { comparison }),
+        }
+    );
+    res.status(response.statusCode).json(response);
+});

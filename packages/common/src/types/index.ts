@@ -1,5 +1,7 @@
 // packages/common/src/types/index.ts
 
+import { User } from "./api-responses";
+
 export * from "./api-responses";
 
 // export interface PaginationParams {
@@ -110,6 +112,21 @@ export interface AuditLogData {
     userId?: string;
     ipAddress?: string;
     userAgent?: string;
+}
+
+// ============================================
+// LOGIN SERVICE - AUTH TYPES
+// ============================================
+
+export interface LoginCredentials {
+    email: string;
+    password: string;
+}
+
+export interface AuthResponse {
+    accessToken: string;
+    refreshToken: string;
+    user: User;
 }
 
 // packages/common/src/utils/constants.ts

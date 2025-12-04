@@ -9,7 +9,7 @@ import {
 } from "@/app/store/slices/authSlice";
 import { queryKeys } from "@/app/providers/query-client";
 import type { RootState } from "@/app/store";
-import type { LoginCredentials } from "../types/auth.types";
+import type { LoginCredentials } from "@repo/common/types";
 
 export const useAuth = () => {
     const dispatch = useDispatch();
@@ -25,8 +25,8 @@ export const useAuth = () => {
         onSuccess: (response) => {
             dispatch(
                 setCredentials({
-                    user: response.data.user,
-                    token: response.data.token,
+                    user: response.user,
+                    token: response.refreshToken,
                 })
             );
             toast.success("Login successful!");

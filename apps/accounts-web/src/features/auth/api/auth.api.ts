@@ -1,6 +1,7 @@
 import { authService } from "@/shared/utils/api-client";
-import type { LoginCredentials, AuthResponse, User } from "../types/auth.types";
+import type { User } from "@repo/common/types";
 import type { ApiResponse } from "@/shared/utils/api-client";
+import { LoginCredentials, AuthResponse } from "@repo/common/types";
 
 export const authApi = {
     login: async (credentials: LoginCredentials): Promise<AuthResponse> => {

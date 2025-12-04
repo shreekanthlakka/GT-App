@@ -409,7 +409,11 @@ export const SaleForm = ({
 
             {/* Submit Button */}
             <div className="flex justify-end gap-4">
-                <Button type="submit" disabled={isLoading} loading={isLoading}>
+                <Button
+                    type="submit"
+                    disabled={isLoading}
+                    isLoading={isLoading}
+                >
                     {initialData ? "Update Sale" : "Create Sale"}
                 </Button>
             </div>

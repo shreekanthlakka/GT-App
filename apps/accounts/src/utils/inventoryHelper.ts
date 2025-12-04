@@ -240,3 +240,106 @@ export function formatStockMovement(movement: any): any {
             : null,
     };
 }
+
+/**
+ * Determines if a stock alert should be triggered based on current stock levels
+ * @param currentStock - Current stock quantity
+ * @param minimumStock - Minimum stock threshold
+ * @param reorderLevel - Optional reorder level threshold
+ * @returns Object with shouldAlert boolean and alertLevel
+ */
+export function shouldTriggerStockAlert(
+    currentStock: number,
+    minimumStock: number,
+    reorderLevel?: number
+): { shouldAlert: boolean; alertLevel: "LOW" | "CRITICAL" | "OUT_OF_STOCK" } {
+    if (currentStock === 0) {
+        return { shouldAlert: true, alertLevel: "OUT_OF_STOCK" };
+    }
+
+    const threshold = reorderLevel || minimumStock;
+
+    if (currentStock <= minimumStock * 0.5) {
+        return { shouldAlert: true, alertLevel: "CRITICAL" };
+    }
+
+    if (currentStock <= threshold) {
+        return { shouldAlert: true, alertLevel: "LOW" };
+    }
+
+    return { shouldAlert: false, alertLevel: "LOW" };
+}
+
+/**
+ * Calculates the recommended reorder quantity based on stock levels
+ * @param currentStock - Current stock quantity
+ * @param minimumStock - Minimum stock threshold
+ * @param maximumStock - Optional maximum stock threshold
+ * @returns Recommended quantity to reorder
+ */
+export function calculateReorderQuantity(
+    currentStock: number,
+    minimumStock: number,
+    maximumStock?: number
+): number {
+    // If we have a maximum stock level, order enough to reach it
+    if (maximumStock && maximumStock > minimumStock) {
+        const reorderQty = maximumStock - currentStock;
+        return Math.max(0, reorderQty);
+    }
+
+    // Otherwise, order enough to reach 2x minimum stock
+    // This provides a buffer above minimum
+    const targetStock = minimumStock * 2;
+    const reorderQty = targetStock - currentStock;
+
+    return Math.max(0, reorderQty);
+}
+
+/**
+ * Determines the current stock status based on stock levels
+ * @param currentStock - Current stock quantity
+ * @param minimumStock - Minimum stock threshold
+ * @param maximumStock - Optional maximum stock threshold
+ * @returns Stock status string
+ */
+export function determineStockStatus(
+    currentStock: number,
+    minimumStock: number,
+    maximumStock?: number
+): "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" | "CRITICAL" {
+    if (currentStock === 0) {
+        return "OUT_OF_STOCK";
+    }
+
+    if (currentStock <= minimumStock * 0.5) {
+        return "CRITICAL";
+    }
+
+    if (currentStock <= minimumStock) {
+        return "LOW_STOCK";
+    }
+
+    return "IN_STOCK";
+}
+
+/**
+ * Calculates the variance percentage between two stock quantities
+ * @param previousStock - Previous stock quantity
+ * @param currentStock - Current stock quantity
+ * @returns Variance percentage (can be positive or negative)
+ */
+export function calculateVariancePercentage(
+    previousStock: number,
+    currentStock: number
+): number {
+    if (previousStock === 0) {
+        // If previous stock was 0, return 100% if there's now stock, or 0% if still 0
+        return currentStock > 0 ? 100 : 0;
+    }
+
+    const variance = ((currentStock - previousStock) / previousStock) * 100;
+
+    // Round to 2 decimal places
+    return Math.round(variance * 100) / 100;
+}

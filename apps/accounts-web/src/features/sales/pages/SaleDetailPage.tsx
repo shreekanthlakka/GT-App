@@ -118,15 +118,15 @@ export const SaleDetailPage = () => {
                         </h3>
                         <div className="space-y-2">
                             <div className="text-lg font-semibold">
-                                {sale.customer.name}
+                                {sale?.customer?.name}
                             </div>
-                            {sale.customer.phone && (
+                            {sale.customer?.phone && (
                                 <div className="flex items-center gap-2">
                                     <Phone className="w-4 h-4 text-gray-400" />
                                     <span>{sale.customer.phone}</span>
                                 </div>
                             )}
-                            {sale.customer.email && (
+                            {sale.customer?.email && (
                                 <div className="flex items-center gap-2">
                                     <Mail className="w-4 h-4 text-gray-400" />
                                     <span>{sale.customer.email}</span>
@@ -216,14 +216,16 @@ export const SaleDetailPage = () => {
 
                     <div className="p-6 border-t">
                         <div className="grid grid-cols-2 gap-4 max-w-md ml-auto">
-                            {sale.discountAmount > 0 && (
+                            {(sale.discountAmount ?? 0) > 0 && (
                                 <>
                                     <div className="text-gray-600">
                                         Discount:
                                     </div>
                                     <div className="text-right font-semibold">
                                         -₹
-                                        {sale.discountAmount.toLocaleString()}
+                                        {(
+                                            sale.discountAmount ?? 0
+                                        ).toLocaleString()}
                                     </div>
                                 </>
                             )}

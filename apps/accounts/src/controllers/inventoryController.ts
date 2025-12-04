@@ -17,12 +17,15 @@ import {
     LowStockAlertPublisher,
     StockCriticalPublisher,
     StockOutPublisher,
+    StockLowPublisher,
+} from "../events/publishers/inventoryPublishers";
+
+import {
     shouldTriggerStockAlert,
     calculateReorderQuantity,
     determineStockStatus,
     calculateVariancePercentage,
-    StockLowPublisher,
-} from "../events/publishers/inventoryPublishers";
+} from "../utils/inventoryHelper";
 
 // ========================================
 // CRUD OPERATIONS

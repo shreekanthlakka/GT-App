@@ -8,7 +8,7 @@ import {
     deleteSale,
     markSaleAsPaid,
     getSalesSummary,
-    getSalesAnalytics,
+    getSaleAnalytics,
     getSalesPerformance,
 } from "../controllers/saleController";
 import { authenticate } from "@repo/common-backend/middleware";
@@ -42,7 +42,7 @@ router.post(
 );
 
 // Analytics endpoints
-router.get("/analytics", authenticate, getSalesAnalytics);
+router.get("/analytics", authenticate, getSaleAnalytics);
 router.get("/performance", authenticate, getSalesPerformance);
 router.get("/search-inventory", authenticate, searchInventoryForSale);
 

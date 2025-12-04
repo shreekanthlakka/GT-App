@@ -74,7 +74,9 @@ export const InvoicePaymentForm = ({
     // Filter invoices based on selected party
     const filteredInvoices =
         watchPartyId && invoices
-            ? invoices.filter((inv: any) => inv.partyId === watchPartyId)
+            ? invoices.filter(
+                  (inv: (typeof invoices)[0]) => inv.partyId === watchPartyId
+              )
             : [];
 
     return (
@@ -115,12 +117,14 @@ export const InvoicePaymentForm = ({
                             disabled={!watchPartyId}
                         >
                             <option value="">Select Invoice (Optional)</option>
-                            {filteredInvoices.map((invoice: any) => (
-                                <option key={invoice.id} value={invoice.id}>
-                                    {invoice.invoiceNo} - Remaining: ₹
-                                    {invoice.remainingAmount?.toLocaleString()}
-                                </option>
-                            ))}
+                            {filteredInvoices.map(
+                                (invoice: (typeof filteredInvoices)[0]) => (
+                                    <option key={invoice.id} value={invoice.id}>
+                                        {invoice.invoiceNo} - Remaining: ₹
+                                        {invoice.remainingAmount?.toLocaleString()}
+                                    </option>
+                                )
+                            )}
                         </select>
                         {errors.invoiceId && (
                             <p className="text-sm text-red-500">
@@ -367,7 +371,11 @@ export const InvoicePaymentForm = ({
 
             {/* Submit Button */}
             <div className="flex justify-end gap-4">
-                <Button type="submit" disabled={isLoading} loading={isLoading}>
+                <Button
+                    type="submit"
+                    disabled={isLoading}
+                    isLoading={isLoading}
+                >
                     {initialData ? "Update Payment" : "Create Payment"}
                 </Button>
             </div>

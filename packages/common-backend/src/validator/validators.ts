@@ -318,6 +318,57 @@ export const validateCustomerId = async (
     }
 };
 
+export const validateGetCustomers = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedQuery = await QuerySchemas.CustomerQuery.parseAsync(
+            req.query
+        );
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Customer query validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validateCustomerLedger = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const schema = z.object({
+            startDate: z.string().optional(),
+            endDate: z.string().optional(),
+            page: z.string().optional(),
+            limit: z.string().optional(),
+            includeTransactions: z.string().optional(),
+        });
+        req.parsedQuery = await schema.parseAsync(req.query);
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Customer ledger query validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
 // ========================================
 // PARTY VALIDATORS
 // ========================================
@@ -409,6 +460,54 @@ export const validatePartyId = async (
     }
 };
 
+export const validateGetParties = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedQuery = await QuerySchemas.PartyQuery.parseAsync(req.query);
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Party query validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validatePartyLedger = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const schema = z.object({
+            startDate: z.string().optional(),
+            endDate: z.string().optional(),
+            page: z.string().optional(),
+            limit: z.string().optional(),
+        });
+        req.parsedQuery = await schema.parseAsync(req.query);
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Party ledger query validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
 // ========================================
 // SALE VALIDATORS
 // ========================================
@@ -493,6 +592,98 @@ export const validateSaleId = async (
             throw new CustomError(
                 400,
                 "Sale ID validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validateGetSales = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedQuery = await QuerySchemas.SaleQuery.parseAsync(req.query);
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Sale query validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validateMarkSaleAsPaid = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const schema = z.object({
+            paidDate: z.string().optional(),
+            paidAmount: z.number().positive().optional(),
+            paymentMethod: z
+                .enum([
+                    "CASH",
+                    "CARD",
+                    "UPI",
+                    "CHEQUE",
+                    "BANK_TRANSFER",
+                    "OTHER",
+                ])
+                .optional(),
+            receiptNumber: z.string().optional(),
+            notes: z.string().optional(),
+        });
+        req.parsedBody = await schema.parseAsync(req.body);
+        req.body = req.parsedBody;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Mark sale as paid validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validateSalesSummary = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const schema = z.object({
+            startDate: z.string().optional(),
+            endDate: z.string().optional(),
+            customerId: z.string().cuid().optional(),
+            partyId: z.string().cuid().optional(),
+            paymentStatus: z
+                .enum(["PAID", "UNPAID", "PARTIAL", "OVERDUE"])
+                .optional(),
+            groupBy: z
+                .enum(["day", "week", "month", "customer", "category"])
+                .optional(),
+        });
+        req.parsedQuery = await schema.parseAsync(req.query);
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Sales summary query validation failed",
                 errors as any
             );
         }
@@ -797,6 +988,178 @@ export const validatePaymentId = async (
             throw new CustomError(
                 400,
                 "Payment ID validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+// ========================================
+// INVOICE QUERY VALIDATORS (MISSING)
+// ========================================
+
+export const validateGetInvoices = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedQuery = await QuerySchemas.InvoiceQuery.parseAsync(req.query);
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Invoice query validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validateMarkInvoiceAsPaid = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const schema = z.object({
+            paidDate: z.string().optional(),
+            paidAmount: z.number().positive().optional(),
+            paymentMethod: z
+                .enum([
+                    "CASH",
+                    "CARD",
+                    "UPI",
+                    "CHEQUE",
+                    "BANK_TRANSFER",
+                    "OTHER",
+                ])
+                .optional(),
+            notes: z.string().optional(),
+        });
+        req.parsedBody = await schema.parseAsync(req.body);
+        req.body = req.parsedBody;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Mark invoice as paid validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+// ========================================
+// INVOICE PAYMENT VALIDATORS
+// ========================================
+
+export const validateCreateInvoicePayment = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedBody = await BusinessSchemas.CreatePayment.parseAsync(
+            req.body
+        );
+        req.body = req.parsedBody;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Invoice payment creation validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validateUpdateInvoicePayment = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedBody = await BusinessSchemas.UpdatePayment.parseAsync(
+            req.body
+        );
+        req.body = req.parsedBody;
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Invoice payment update validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validateGetInvoicePayments = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        req.parsedQuery = await QuerySchemas.PaymentQuery.parseAsync(req.query);
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Invoice payment query validation failed",
+                errors as any
+            );
+        }
+        next(error);
+    }
+};
+
+export const validatePaymentSummary = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const schema = z.object({
+            startDate: z.string().optional(),
+            endDate: z.string().optional(),
+            partyId: z.string().cuid().optional(),
+            customerId: z.string().cuid().optional(),
+            method: z
+                .enum([
+                    "CASH",
+                    "CARD",
+                    "UPI",
+                    "CHEQUE",
+                    "BANK_TRANSFER",
+                    "OTHER",
+                ])
+                .optional(),
+        });
+        req.parsedQuery = await schema.parseAsync(req.query);
+        next();
+    } catch (error) {
+        if (error instanceof ZodError) {
+            const errors = formatZodErrors(error);
+            throw new CustomError(
+                400,
+                "Payment summary query validation failed",
                 errors as any
             );
         }
