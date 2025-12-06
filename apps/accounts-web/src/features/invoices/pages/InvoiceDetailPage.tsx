@@ -117,15 +117,15 @@ export const InvoiceDetailPage = () => {
                         </h3>
                         <div className="space-y-2">
                             <div className="text-lg font-semibold">
-                                {invoice.party.name}
+                                {invoice.party?.name}
                             </div>
-                            {invoice.party.phone && (
+                            {invoice.party?.phone && (
                                 <div className="flex items-center gap-2">
                                     <Phone className="w-4 h-4 text-gray-400" />
                                     <span>{invoice.party.phone}</span>
                                 </div>
                             )}
-                            {invoice.party.email && (
+                            {invoice.party?.email && (
                                 <div className="flex items-center gap-2">
                                     <Mail className="w-4 h-4 text-gray-400" />
                                     <span>{invoice.party.email}</span>
@@ -207,17 +207,18 @@ export const InvoiceDetailPage = () => {
 
                     <div className="p-6 border-t">
                         <div className="grid grid-cols-2 gap-4 max-w-md ml-auto">
-                            {invoice.discountAmount > 0 && (
-                                <>
-                                    <div className="text-gray-600">
-                                        Discount:
-                                    </div>
-                                    <div className="text-right font-semibold">
-                                        -₹
-                                        {invoice.discountAmount.toLocaleString()}
-                                    </div>
-                                </>
-                            )}
+                            {invoice.discountAmount != null &&
+                                invoice.discountAmount > 0 && (
+                                    <>
+                                        <div className="text-gray-600">
+                                            Discount:
+                                        </div>
+                                        <div className="text-right font-semibold">
+                                            -₹
+                                            {invoice.discountAmount.toLocaleString()}
+                                        </div>
+                                    </>
+                                )}
                             {invoice.taxAmount && (
                                 <>
                                     <div className="text-gray-600">

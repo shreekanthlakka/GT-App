@@ -18,7 +18,7 @@ export const PaymentMethodSchema = z.enum([
 export const CreateInvoicePaymentSchema = z.object({
     amount: z.number().min(0.01, "Amount must be positive"),
     date: z.string().datetime("Invalid date format"),
-    method: PaymentMethodSchema,
+    method: PaymentMethodSchema.optional(),
     reference: z.string().optional(),
     description: z.string().optional(),
 

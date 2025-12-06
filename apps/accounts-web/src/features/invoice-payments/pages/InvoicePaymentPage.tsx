@@ -9,14 +9,18 @@ import {
 import { Button, Input, Card, Table, Badge, Skeleton } from "@repo/ui";
 import { useDebounce } from "@repo/ui";
 import { Plus, Search, Eye, Trash2 } from "lucide-react";
+import { PaymentMethod, PaymentStatus } from "@repo/common/types";
 
 export const InvoicePaymentsPage = () => {
     const navigate = useNavigate();
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
-    const [methodFilter, setMethodFilter] = useState<string>("");
-    const [statusFilter, setStatusFilter] = useState<string>("");
+    const [methodFilter, setMethodFilter] = useState<PaymentMethod | "">("");
+    const [statusFilter, setStatusFilter] = useState<
+        "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED" | "REFUNDED" | ""
+    >("");
     const debouncedSearch = useDebounce(search, 300);
+    const [sortOrder] = useState<"asc" | "desc">("desc");
 
     const { data, isLoading } = useInvoicePayments({
         search: debouncedSearch,
@@ -24,7 +28,8 @@ export const InvoicePaymentsPage = () => {
         limit: 10,
         method: methodFilter || undefined,
         status: statusFilter || undefined,
-    } as any);
+        sortOrder,
+    });
 
     const deleteMutation = useDeleteInvoicePayment();
 
@@ -107,7 +112,9 @@ export const InvoicePaymentsPage = () => {
                     </div>
                     <select
                         value={methodFilter}
-                        onChange={(e) => setMethodFilter(e.target.value)}
+                        onChange={(e) =>
+                            setMethodFilter(e.target.value as PaymentMethod)
+                        }
                         className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">All Methods</option>
@@ -121,7 +128,9 @@ export const InvoicePaymentsPage = () => {
                     </select>
                     <select
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                        onChange={(e) =>
+                            setStatusFilter(e.target.value as PaymentStatus)
+                        }
                         className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">All Status</option>
@@ -152,7 +161,7 @@ export const InvoicePaymentsPage = () => {
                         {data?.data.map((payment) => (
                             <tr key={payment.id}>
                                 <td className="font-medium">
-                                    {payment.party.name}
+                                    {payment.party?.name}
                                 </td>
                                 <td>
                                     {new Date(

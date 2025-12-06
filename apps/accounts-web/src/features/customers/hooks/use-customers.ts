@@ -140,6 +140,7 @@ import type {
     CustomerQueryType,
 } from "@repo/common/schemas"; // apps/accounts-web/src/features/customers/hooks/use-customers.ts
 import { ApiErrorResponse } from "@repo/common/types";
+import { AxiosError } from "axios";
 
 // import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 // import { customersApi } from "../api/customers.api";
@@ -430,7 +431,7 @@ export const useCreateCustomer = () => {
             });
             toast.success("Customer created successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to create customer"
             );
@@ -453,7 +454,7 @@ export const useUpdateCustomer = (id: string) => {
             });
             toast.success("Customer updated successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to update customer"
             );
@@ -475,7 +476,7 @@ export const useDeleteCustomer = () => {
             });
             toast.success("Customer deleted successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to delete customer"
             );
@@ -498,7 +499,7 @@ export const useSendPaymentReminder = () => {
         onSuccess: () => {
             toast.success("Payment reminder sent successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message ||
                     "Failed to send payment reminder"
@@ -527,7 +528,7 @@ export const useUpdateCreditLimit = () => {
             });
             toast.success("Credit limit updated successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message ||
                     "Failed to update credit limit"
@@ -550,7 +551,7 @@ export const useToggleActiveStatus = () => {
             });
             toast.success("Customer status updated successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to update status"
             );
@@ -575,7 +576,7 @@ export const useMergeCustomers = () => {
             });
             toast.success("Customers merged successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to merge customers"
             );

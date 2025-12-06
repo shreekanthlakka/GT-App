@@ -8,7 +8,8 @@ import type {
     UpdateSaleType,
     SaleQueryType,
 } from "@repo/common/schemas";
-import { DateRange } from "@repo/common/types";
+import { ApiErrorResponse, DateRange } from "@repo/common/types";
+import { AxiosError } from "axios";
 
 export const SALE_QUERY_KEYS = {
     all: ["sales"] as const,
@@ -67,7 +68,7 @@ export const useCreateSale = () => {
             });
             toast.success("Sale created successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to create sale"
             );
@@ -90,7 +91,7 @@ export const useUpdateSale = (id: string) => {
             });
             toast.success("Sale updated successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to update sale"
             );
@@ -110,7 +111,7 @@ export const useDeleteSale = () => {
             });
             toast.success("Sale deleted successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to delete sale"
             );
@@ -130,7 +131,7 @@ export const useCancelSale = () => {
             });
             toast.success("Sale cancelled successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to cancel sale"
             );

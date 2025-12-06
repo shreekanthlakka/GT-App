@@ -11,15 +11,19 @@ export const InvoicesPage = () => {
     const navigate = useNavigate();
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
-    const [statusFilter, setStatusFilter] = useState<string>("");
+    const [statusFilter, setStatusFilter] = useState<
+        "PENDING" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "CANCELLED" | ""
+    >("");
     const debouncedSearch = useDebounce(search, 300);
+    const [sort] = useState<"asc" | "desc">("desc");
 
     const { data, isLoading } = useInvoices({
         search: debouncedSearch,
         page,
         limit: 10,
         status: statusFilter || undefined,
-    } as any);
+        sortOrder: sort,
+    });
 
     const deleteMutation = useDeleteInvoice();
 
@@ -89,7 +93,17 @@ export const InvoicesPage = () => {
                     </div>
                     <select
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                        onChange={(e) =>
+                            setStatusFilter(
+                                e.target.value as
+                                    | "PENDING"
+                                    | "PARTIALLY_PAID"
+                                    | "PAID"
+                                    | "OVERDUE"
+                                    | "CANCELLED"
+                                    | ""
+                            )
+                        }
                         className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">All Status</option>
@@ -124,7 +138,7 @@ export const InvoicesPage = () => {
                                 <td className="font-medium">
                                     {invoice.invoiceNo}
                                 </td>
-                                <td>{invoice.party.name}</td>
+                                <td>{invoice.party?.name}</td>
                                 <td>
                                     {new Date(
                                         invoice.date

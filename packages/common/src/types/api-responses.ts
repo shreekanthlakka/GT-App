@@ -1504,7 +1504,13 @@ export interface DateRange {
 // ENUM TYPES FROM PRISMA
 // ============================================
 
-export type UserRole = "OWNER" | "MANAGER" | "STAFF" | "VIEWER" | "ACCOUNTANT";
+export type UserRole =
+    | "OWNER"
+    | "MANAGER"
+    | "STAFF"
+    | "VIEWER"
+    | "ACCOUNTANT"
+    | "ADMIN";
 
 export type InvoiceStatus =
     | "PENDING"
@@ -2204,6 +2210,34 @@ export interface CashFlowAnalysis {
             projectedBalance: number;
         };
     };
+}
+
+export interface PaymentMethodSummary {
+    method: string;
+    count: number;
+    amount: number;
+    percentage: number;
+    avgAmount: number;
+}
+
+export interface PartyPaymentHistory {
+    party: {
+        id: string;
+        name: string;
+        phone?: string | null;
+        email?: string | null;
+    };
+    totalPaid: number;
+    paymentCount: number;
+    lastPaymentDate?: string;
+    payments: InvoicePayment[];
+    invoices: {
+        id: string;
+        invoiceNo: string;
+        amount: number;
+        paidAmount: number;
+        remainingAmount: number;
+    }[];
 }
 
 // ============================================

@@ -1,13 +1,16 @@
 // apps/accounts-web/src/features/invoice-payments/components/InvoicePaymentForm.tsx
+// Enhanced version with dynamic invoice fetching
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import {
     CreateInvoicePaymentSchema,
     type CreateInvoicePaymentType,
 } from "@repo/common/schemas";
 import { Button, Input, Label, Card } from "@repo/ui";
 import type { InvoicePayment } from "@repo/common/types";
+import { invoicesApi } from "@/features/invoices/api/invoices.api";
 import { useState } from "react";
 
 interface InvoicePaymentFormProps {
@@ -15,11 +18,6 @@ interface InvoicePaymentFormProps {
     onSubmit: (data: CreateInvoicePaymentType) => void;
     isLoading?: boolean;
     parties?: Array<{ id: string; name: string }>;
-    invoices?: Array<{
-        id: string;
-        invoiceNo: string;
-        remainingAmount: number;
-    }>;
 }
 
 export const InvoicePaymentForm = ({
@@ -27,11 +25,8 @@ export const InvoicePaymentForm = ({
     onSubmit,
     isLoading,
     parties = [],
-    invoices = [],
 }: InvoicePaymentFormProps) => {
-    const [selectedMethod, setSelectedMethod] = useState(
-        initialData?.method || "CASH"
-    );
+    const [, setSelectedMethod] = useState(initialData?.method || "CASH");
 
     const {
         register,
@@ -45,40 +40,56 @@ export const InvoicePaymentForm = ({
                   amount: initialData.amount,
                   date: new Date(initialData.date).toISOString().split("T")[0],
                   method: initialData.method,
-                  reference: initialData.reference || "",
-                  description: initialData.description || "",
+                  reference: initialData.reference || undefined,
+                  description: initialData.description || undefined,
                   partyId: initialData.partyId,
                   invoiceId: initialData.invoiceId || undefined,
-                  bankName: initialData.bankName || "",
-                  chequeNo: initialData.chequeNo || "",
+                  bankName: initialData.bankName || undefined,
+                  chequeNo: initialData.chequeNo || undefined,
                   chequeDate: initialData.chequeDate
                       ? new Date(initialData.chequeDate)
                             .toISOString()
                             .split("T")[0]
                       : undefined,
-                  gatewayOrderId: initialData.gatewayOrderId || "",
-                  gatewayPaymentId: initialData.gatewayPaymentId || "",
-                  transactionId: initialData.transactionId || "",
+                  clearanceDate: initialData.clearanceDate
+                      ? new Date(initialData.clearanceDate)
+                            .toISOString()
+                            .split("T")[0]
+                      : undefined,
                   charges: initialData.charges || undefined,
               }
             : {
                   amount: 0,
                   date: new Date().toISOString().split("T")[0],
                   method: "CASH",
+                  partyId: "",
               },
     });
 
     const watchMethod = watch("method");
     const watchPartyId = watch("partyId");
 
-    // Filter invoices based on selected party
-    const filteredInvoices =
-        watchPartyId && invoices
-            ? invoices.filter(
-                  (inv: (typeof invoices)[0]) => inv.partyId === watchPartyId
-              )
-            : [];
+    // Dynamically fetch invoices for selected party
+    // Fetch all invoices then filter on frontend to avoid schema issues with comma-separated status
+    const { data: partyInvoices, isLoading: loadingInvoices } = useQuery({
+        queryKey: ["invoices", "party", watchPartyId, "unpaid"],
+        queryFn: async () => {
+            const response = await invoicesApi.getInvoices({
+                partyId: watchPartyId,
+                limit: 100,
+                page: 1,
+                sortOrder: "desc",
+            });
+            return response;
+        },
+        enabled: !!watchPartyId, // Only fetch when party is selected
+    });
 
+    // Filter for unpaid/partially paid invoices on the frontend
+    const filteredInvoices = (partyInvoices?.data || []).filter(
+        (invoice) =>
+            invoice.status === "PENDING" || invoice.status === "PARTIALLY_PAID"
+    );
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Basic Payment Information */}
@@ -88,13 +99,39 @@ export const InvoicePaymentForm = ({
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="partyId">Party *</Label>
+                        <Label htmlFor="amount">Amount *</Label>
+                        <Input
+                            id="amount"
+                            type="number"
+                            step="0.01"
+                            {...register("amount", { valueAsNumber: true })}
+                            error={errors.amount?.message}
+                            placeholder="Enter amount"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="date">Payment Date *</Label>
+                        <Input
+                            id="date"
+                            type="date"
+                            {...register("date")}
+                            error={errors.date?.message}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="partyId">Party/Supplier *</Label>
                         <select
                             id="partyId"
                             {...register("partyId")}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={`w-full px-3 py-2 border rounded-md ${
+                                errors.partyId
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                            }`}
                         >
-                            <option value="">Select Party</option>
+                            <option value="">Select party</option>
                             {parties.map((party) => (
                                 <option key={party.id} value={party.id}>
                                     {party.name}
@@ -113,64 +150,52 @@ export const InvoicePaymentForm = ({
                         <select
                             id="invoiceId"
                             {...register("invoiceId")}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={!watchPartyId}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            disabled={!watchPartyId || loadingInvoices}
                         >
-                            <option value="">Select Invoice (Optional)</option>
-                            {filteredInvoices.map(
-                                (invoice: (typeof filteredInvoices)[0]) => (
-                                    <option key={invoice.id} value={invoice.id}>
-                                        {invoice.invoiceNo} - Remaining: ₹
-                                        {invoice.remainingAmount?.toLocaleString()}
-                                    </option>
-                                )
-                            )}
+                            <option value="">
+                                {!watchPartyId
+                                    ? "Select party first"
+                                    : loadingInvoices
+                                      ? "Loading invoices..."
+                                      : "Select invoice (optional)"}
+                            </option>
+                            {filteredInvoices.map((invoice) => (
+                                <option key={invoice.id} value={invoice.id}>
+                                    {invoice.invoiceNo} - ₹
+                                    {invoice.remainingAmount.toFixed(2)}
+                                </option>
+                            ))}
                         </select>
-                        {errors.invoiceId && (
-                            <p className="text-sm text-red-500">
-                                {errors.invoiceId.message}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="amount">Amount *</Label>
-                        <Input
-                            id="amount"
-                            type="number"
-                            step="0.01"
-                            {...register("amount", { valueAsNumber: true })}
-                            error={errors.amount?.message}
-                            placeholder="Enter payment amount"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="date">Payment Date *</Label>
-                        <Input
-                            id="date"
-                            type="date"
-                            {...register("date")}
-                            error={errors.date?.message}
-                        />
+                        {watchPartyId &&
+                            filteredInvoices.length === 0 &&
+                            !loadingInvoices && (
+                                <p className="text-sm text-gray-500">
+                                    No pending invoices for this party
+                                </p>
+                            )}
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="method">Payment Method *</Label>
                         <select
                             id="method"
-                            {...register("method")}
-                            onChange={(e) =>
-                                setSelectedMethod(e.target.value as any)
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            {...register("method", {
+                                onChange: (e) =>
+                                    setSelectedMethod(e.target.value),
+                            })}
+                            className={`w-full px-3 py-2 border rounded-md ${
+                                errors.method
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                            }`}
                         >
                             <option value="CASH">Cash</option>
                             <option value="BANK_TRANSFER">Bank Transfer</option>
                             <option value="CHEQUE">Cheque</option>
                             <option value="UPI">UPI</option>
                             <option value="CARD">Card</option>
-                            <option value="ONLINE">Online Gateway</option>
+                            <option value="ONLINE">Online</option>
                             <option value="OTHER">Other</option>
                         </select>
                         {errors.method && (
@@ -181,34 +206,44 @@ export const InvoicePaymentForm = ({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="reference">Reference</Label>
+                        <Label htmlFor="reference">Reference Number</Label>
                         <Input
                             id="reference"
                             {...register("reference")}
                             error={errors.reference?.message}
-                            placeholder="Transaction reference"
+                            placeholder="Transaction ID, Receipt No, etc."
+                        />
+                    </div>
+
+                    <div className="col-span-full space-y-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Input
+                            id="description"
+                            {...register("description")}
+                            error={errors.description?.message}
+                            placeholder="Payment description or notes"
                         />
                     </div>
                 </div>
-
-                <div className="mt-4 space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <textarea
-                        id="description"
-                        {...register("description")}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
-                        placeholder="Payment description or notes"
-                    />
-                </div>
             </Card>
 
-            {/* Cheque Details */}
-            {(watchMethod === "CHEQUE" || selectedMethod === "CHEQUE") && (
+            {/* Cheque Details - Show only for CHEQUE method */}
+            {watchMethod === "CHEQUE" && (
                 <Card className="p-6">
                     <h3 className="text-lg font-semibold mb-4">
                         Cheque Details
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="bankName">Bank Name</Label>
+                            <Input
+                                id="bankName"
+                                {...register("bankName")}
+                                error={errors.bankName?.message}
+                                placeholder="Enter bank name"
+                            />
+                        </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="chequeNo">Cheque Number</Label>
                             <Input
@@ -230,21 +265,22 @@ export const InvoicePaymentForm = ({
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="bankName">Bank Name</Label>
+                            <Label htmlFor="clearanceDate">
+                                Clearance Date (Optional)
+                            </Label>
                             <Input
-                                id="bankName"
-                                {...register("bankName")}
-                                error={errors.bankName?.message}
-                                placeholder="Enter bank name"
+                                id="clearanceDate"
+                                type="date"
+                                {...register("clearanceDate")}
+                                error={errors.clearanceDate?.message}
                             />
                         </div>
                     </div>
                 </Card>
             )}
 
-            {/* Bank Transfer Details */}
-            {(watchMethod === "BANK_TRANSFER" ||
-                selectedMethod === "BANK_TRANSFER") && (
+            {/* Bank Transfer Details - Show for BANK_TRANSFER method */}
+            {watchMethod === "BANK_TRANSFER" && (
                 <Card className="p-6">
                     <h3 className="text-lg font-semibold mb-4">
                         Bank Transfer Details
@@ -261,19 +297,9 @@ export const InvoicePaymentForm = ({
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="transactionId">
-                                Transaction ID
+                            <Label htmlFor="charges">
+                                Transfer Charges (Optional)
                             </Label>
-                            <Input
-                                id="transactionId"
-                                {...register("transactionId")}
-                                error={errors.transactionId?.message}
-                                placeholder="Enter transaction ID"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="charges">Transfer Charges</Label>
                             <Input
                                 id="charges"
                                 type="number"
@@ -289,69 +315,13 @@ export const InvoicePaymentForm = ({
                 </Card>
             )}
 
-            {/* UPI Details */}
-            {(watchMethod === "UPI" || selectedMethod === "UPI") && (
-                <Card className="p-6">
-                    <h3 className="text-lg font-semibold mb-4">UPI Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="transactionId">
-                                UPI Transaction ID
-                            </Label>
-                            <Input
-                                id="transactionId"
-                                {...register("transactionId")}
-                                error={errors.transactionId?.message}
-                                placeholder="Enter UPI transaction ID"
-                            />
-                        </div>
-                    </div>
-                </Card>
-            )}
-
-            {/* Online Gateway Details */}
-            {(watchMethod === "ONLINE" || selectedMethod === "ONLINE") && (
+            {/* Online Payment Details - Show for ONLINE method */}
+            {watchMethod === "ONLINE" && (
                 <Card className="p-6">
                     <h3 className="text-lg font-semibold mb-4">
-                        Gateway Details
+                        Online Payment Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="gatewayOrderId">
-                                Gateway Order ID
-                            </Label>
-                            <Input
-                                id="gatewayOrderId"
-                                {...register("gatewayOrderId")}
-                                error={errors.gatewayOrderId?.message}
-                                placeholder="Enter gateway order ID"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="gatewayPaymentId">
-                                Gateway Payment ID
-                            </Label>
-                            <Input
-                                id="gatewayPaymentId"
-                                {...register("gatewayPaymentId")}
-                                error={errors.gatewayPaymentId?.message}
-                                placeholder="Enter gateway payment ID"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="transactionId">
-                                Transaction ID
-                            </Label>
-                            <Input
-                                id="transactionId"
-                                {...register("transactionId")}
-                                error={errors.transactionId?.message}
-                                placeholder="Enter transaction ID"
-                            />
-                        </div>
-
                         <div className="space-y-2">
                             <Label htmlFor="charges">Gateway Charges</Label>
                             <Input
@@ -366,6 +336,10 @@ export const InvoicePaymentForm = ({
                             />
                         </div>
                     </div>
+                    <p className="text-sm text-gray-500 mt-2">
+                        Note: Gateway transaction IDs are automatically captured
+                        by the system during payment processing.
+                    </p>
                 </Card>
             )}
 

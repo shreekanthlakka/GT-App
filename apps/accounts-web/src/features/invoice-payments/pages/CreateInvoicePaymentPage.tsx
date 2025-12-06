@@ -7,7 +7,6 @@ import { ArrowLeft } from "lucide-react";
 import type { CreateInvoicePaymentType } from "@repo/common/schemas";
 import { useQuery } from "@tanstack/react-query";
 import { partiesApi } from "@/features/parties/api/parties.api";
-import { invoicesApi } from "@/features/invoices/api/invoices.api";
 
 export const CreateInvoicePaymentPage = () => {
     const navigate = useNavigate();
@@ -16,17 +15,8 @@ export const CreateInvoicePaymentPage = () => {
     // Fetch parties for dropdown
     const { data: partiesData } = useQuery({
         queryKey: ["parties", "list"],
-        queryFn: () => partiesApi.getParties({ limit: 1000 }),
-    });
-
-    // Fetch unpaid/partially paid invoices for dropdown
-    const { data: invoicesData } = useQuery({
-        queryKey: ["invoices", "unpaid"],
         queryFn: () =>
-            invoicesApi.getInvoices({
-                status: "PENDING,PARTIALLY_PAID",
-                limit: 1000,
-            }),
+            partiesApi.getParties({ limit: 1000, page: 1, sortOrder: "asc" }),
     });
 
     const handleSubmit = async (data: CreateInvoicePaymentType) => {
@@ -52,12 +42,11 @@ export const CreateInvoicePaymentPage = () => {
                 </div>
             </div>
 
-            {/* Form */}
+            {/* Form - invoices are now fetched dynamically inside the form */}
             <InvoicePaymentForm
                 onSubmit={handleSubmit}
                 isLoading={createMutation.isPending}
                 parties={partiesData?.data || []}
-                invoices={invoicesData?.data || []}
             />
         </div>
     );

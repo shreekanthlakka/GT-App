@@ -4,9 +4,9 @@ import {
     KafkaMessage,
     SendEmailRequestEvent,
 } from "@repo/common-backend/interfaces";
-import { NotificationService } from "../../services/notificationServices";
+import { NotificationService } from "../apps/notification/src/services/notificationServices";
 import { LogCategory, logger } from "@repo/common-backend/logger";
-import { EmailSentPublisher } from "../publisher/email-sent-publisher";
+import { EmailSentPublisher } from "../apps/notification/src/events/publisher/email-sent-publisher";
 
 export class SendEmailRequestConsumer extends KafkaConsumer<SendEmailRequestEvent> {
     subject = Subjects.SendEmailRequested as const;

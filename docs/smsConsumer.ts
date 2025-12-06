@@ -2,7 +2,7 @@ import { Subjects } from "@repo/common/subjects";
 import { KafkaMessage, SendSMSEvent } from "@repo/common-backend/interfaces";
 import { KafkaConsumer } from "@repo/common-backend/kafka";
 import { LogCategory, logger } from "@repo/common-backend/logger";
-import { NotificationService } from "../../services/notificationServices";
+import { NotificationService } from "../apps/notification/src/services/notificationServices";
 
 export class SendSMSConsumer extends KafkaConsumer<SendSMSEvent> {
     subject = Subjects.SMSMessageSent as const;

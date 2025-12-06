@@ -257,7 +257,7 @@ export const CustomerDetailPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {ledger?.map((entry) => (
+                            {ledger?.ledgerEntries.map((entry) => (
                                 <tr key={entry.id}>
                                     <td>
                                         {new Date(

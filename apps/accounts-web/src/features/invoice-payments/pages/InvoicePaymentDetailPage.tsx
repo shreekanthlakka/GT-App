@@ -120,15 +120,15 @@ export const InvoicePaymentDetailPage = () => {
                         </h3>
                         <div className="space-y-2">
                             <div className="text-lg font-semibold">
-                                {payment.party.name}
+                                {payment.party?.name}
                             </div>
-                            {payment.party.phone && (
+                            {payment.party?.phone && (
                                 <div className="flex items-center gap-2">
                                     <Phone className="w-4 h-4 text-gray-400" />
                                     <span>{payment.party.phone}</span>
                                 </div>
                             )}
-                            {payment.party.email && (
+                            {payment.party?.email && (
                                 <div className="flex items-center gap-2">
                                     <Mail className="w-4 h-4 text-gray-400" />
                                     <span>{payment.party.email}</span>

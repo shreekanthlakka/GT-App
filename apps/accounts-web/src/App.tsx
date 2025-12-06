@@ -10,6 +10,11 @@ import { CreateInvoicePage } from "./features/invoices/pages/CreateInvoicePage";
 import { SalesPage } from "./features/sales/pages/SalesPage";
 import { CreateSalePage } from "./features/sales/pages/CreateSalePage";
 import { SaleDetailPage } from "./features/sales/pages/SaleDetailPage";
+import { InvoicePaymentsPage } from "./features/invoice-payments/pages/InvoicePaymentPage";
+import { CreateInvoicePaymentPage } from "./features/invoice-payments/pages/CreateInvoicePaymentPage";
+import { InvoicePaymentDetailPage } from "./features/invoice-payments/pages/InvoicePaymentDetailPage";
+import { PaymentAnalyticsPage } from "./features/invoice-payments/pages/InvoicePaymentAnalyticsPage";
+import { EditInvoicePaymentPage } from "./features/invoice-payments/pages/EditInvoicePaymentPage";
 
 const CustomerDetailPage = lazy(
     () => import("./features/customers/pages/CustomerDetailPage")
@@ -65,7 +70,6 @@ function App() {
                         element={<Navigate to="/dashboard" replace />}
                     />
                     <Route path="dashboard" element={<Dashboard />} />
-
                     {/* Parties */}
                     <Route path="parties" element={<PartiesPage />} />
                     <Route path="parties/new" element={<CreatePartyPage />} />
@@ -74,7 +78,6 @@ function App() {
                         path="parties/:id/edit"
                         element={<EditPartyPage />}
                     />
-
                     {/* customer  */}
                     <Route path="customers" element={<CustomersPage />} />
                     <Route
@@ -99,10 +102,32 @@ function App() {
                         path="invoices/:id"
                         element={<InvoiceDetailPage />}
                     />
+                    {/* payments */}
+                    <Route
+                        path="invoice-payments"
+                        element={<InvoicePaymentsPage />}
+                    />
+                    <Route
+                        path="invoice-payments/new"
+                        element={<CreateInvoicePaymentPage />}
+                    />
+                    <Route
+                        path="invoice-payments/:id"
+                        element={<InvoicePaymentDetailPage />}
+                    />
+                    <Route
+                        path="invoice-payments/:id/edit"
+                        element={<EditInvoicePaymentPage />}
+                    />
+                    <Route
+                        path="invoice-payments/analytics"
+                        element={<PaymentAnalyticsPage />}
+                    />{" "}
+                    {/* sales */}
                     <Route path="sales" element={<SalesPage />} />
                     <Route path="sales/new" element={<CreateSalePage />} />
                     <Route path="sales/:id" element={<SaleDetailPage />} />
-
+                    {/* Inventory */}
                     <Route
                         path="inventory"
                         element={

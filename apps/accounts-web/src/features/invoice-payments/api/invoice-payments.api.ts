@@ -6,145 +6,153 @@ import type {
     UpdateInvoicePaymentType,
     InvoicePaymentQueryType,
 } from "@repo/common/schemas";
-import { PaginatedResponse } from "@repo/common/types";
+import {
+    PaginatedResponse,
+    PartyPaymentHistory,
+    PaymentMethodSummary,
+    InvoicePayment,
+    InvoicePaymentAnalytics,
+    InvoicePaymentSummary,
+    CashFlowAnalysis,
+} from "@repo/common/types";
 
-export interface InvoicePayment {
-    id: string;
-    voucherId: string;
-    amount: number;
-    date: string;
-    method:
-        | "CASH"
-        | "BANK_TRANSFER"
-        | "CHEQUE"
-        | "UPI"
-        | "CARD"
-        | "ONLINE"
-        | "OTHER";
-    reference?: string | null;
-    description?: string | null;
-    status: "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED" | "REFUNDED";
-    gatewayOrderId?: string | null;
-    gatewayPaymentId?: string | null;
-    transactionId?: string | null;
-    failureReason?: string | null;
-    bankName?: string | null;
-    chequeNo?: string | null;
-    chequeDate?: string | null;
-    clearanceDate?: string | null;
-    charges?: number | null;
-    partyId: string;
-    party: {
-        id: string;
-        name: string;
-        phone?: string | null;
-        email?: string | null;
-    };
-    invoiceId?: string | null;
-    invoice?: {
-        id: string;
-        invoiceNo: string;
-        amount: number;
-    } | null;
-    userId: string;
-    createdAt: string;
-    updatedAt: string;
-}
+// export interface InvoicePayment {
+//     id: string;
+//     voucherId: string;
+//     amount: number;
+//     date: string;
+//     method:
+//         | "CASH"
+//         | "BANK_TRANSFER"
+//         | "CHEQUE"
+//         | "UPI"
+//         | "CARD"
+//         | "ONLINE"
+//         | "OTHER";
+//     reference?: string | null;
+//     description?: string | null;
+//     status: "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED" | "REFUNDED";
+//     gatewayOrderId?: string | null;
+//     gatewayPaymentId?: string | null;
+//     transactionId?: string | null;
+//     failureReason?: string | null;
+//     bankName?: string | null;
+//     chequeNo?: string | null;
+//     chequeDate?: string | null;
+//     clearanceDate?: string | null;
+//     charges?: number | null;
+//     partyId: string;
+//     party: {
+//         id: string;
+//         name: string;
+//         phone?: string | null;
+//         email?: string | null;
+//     };
+//     invoiceId?: string | null;
+//     invoice?: {
+//         id: string;
+//         invoiceNo: string;
+//         amount: number;
+//     } | null;
+//     userId: string;
+//     createdAt: string;
+//     updatedAt: string;
+// }
 
-// ========================================
-// NEW: Analytics and Summary Interfaces
-// ========================================
+// // ========================================
+// // NEW: Analytics and Summary Interfaces
+// // ========================================
 
-export interface InvoicePaymentAnalytics {
-    totalPayments: number;
-    totalAmount: number;
-    completedAmount: number;
-    pendingAmount: number;
-    failedAmount: number;
-    avgPaymentAmount: number;
-    paymentsByMethod: {
-        method: string;
-        count: number;
-        amount: number;
-    }[];
-    paymentsByStatus: {
-        status: string;
-        count: number;
-        amount: number;
-    }[];
-    paymentsByParty: {
-        partyId: string;
-        partyName: string;
-        count: number;
-        amount: number;
-    }[];
-    monthlyTrend: {
-        month: string;
-        count: number;
-        amount: number;
-    }[];
-}
+// export interface InvoicePaymentAnalytics {
+//     totalPayments: number;
+//     totalAmount: number;
+//     completedAmount: number;
+//     pendingAmount: number;
+//     failedAmount: number;
+//     avgPaymentAmount: number;
+//     paymentsByMethod: {
+//         method: string;
+//         count: number;
+//         amount: number;
+//     }[];
+//     paymentsByStatus: {
+//         status: string;
+//         count: number;
+//         amount: number;
+//     }[];
+//     paymentsByParty: {
+//         partyId: string;
+//         partyName: string;
+//         count: number;
+//         amount: number;
+//     }[];
+//     monthlyTrend: {
+//         month: string;
+//         count: number;
+//         amount: number;
+//     }[];
+// }
 
-export interface InvoicePaymentSummary {
-    todayPayments: {
-        count: number;
-        amount: number;
-    };
-    weekPayments: {
-        count: number;
-        amount: number;
-    };
-    monthPayments: {
-        count: number;
-        amount: number;
-    };
-    pendingCheques: {
-        count: number;
-        amount: number;
-        cheques: {
-            id: string;
-            chequeNo: string;
-            amount: number;
-            chequeDate: string;
-            partyName: string;
-        }[];
-    };
-    recentPayments: InvoicePayment[];
-    topParties: {
-        partyId: string;
-        partyName: string;
-        totalPaid: number;
-        paymentCount: number;
-    }[];
-}
+// export interface InvoicePaymentSummary {
+//     todayPayments: {
+//         count: number;
+//         amount: number;
+//     };
+//     weekPayments: {
+//         count: number;
+//         amount: number;
+//     };
+//     monthPayments: {
+//         count: number;
+//         amount: number;
+//     };
+//     pendingCheques: {
+//         count: number;
+//         amount: number;
+//         cheques: {
+//             id: string;
+//             chequeNo: string;
+//             amount: number;
+//             chequeDate: string;
+//             partyName: string;
+//         }[];
+//     };
+//     recentPayments: InvoicePayment[];
+//     topParties: {
+//         partyId: string;
+//         partyName: string;
+//         totalPaid: number;
+//         paymentCount: number;
+//     }[];
+// }
 
-export interface PaymentMethodSummary {
-    method: string;
-    count: number;
-    amount: number;
-    percentage: number;
-    avgAmount: number;
-}
+// export interface PaymentMethodSummary {
+//     method: string;
+//     count: number;
+//     amount: number;
+//     percentage: number;
+//     avgAmount: number;
+// }
 
-export interface PartyPaymentHistory {
-    party: {
-        id: string;
-        name: string;
-        phone?: string | null;
-        email?: string | null;
-    };
-    totalPaid: number;
-    paymentCount: number;
-    lastPaymentDate?: string;
-    payments: InvoicePayment[];
-    invoices: {
-        id: string;
-        invoiceNo: string;
-        amount: number;
-        paidAmount: number;
-        remainingAmount: number;
-    }[];
-}
+// export interface PartyPaymentHistory {
+//     party: {
+//         id: string;
+//         name: string;
+//         phone?: string | null;
+//         email?: string | null;
+//     };
+//     totalPaid: number;
+//     paymentCount: number;
+//     lastPaymentDate?: string;
+//     payments: InvoicePayment[];
+//     invoices: {
+//         id: string;
+//         invoiceNo: string;
+//         amount: number;
+//         paidAmount: number;
+//         remainingAmount: number;
+//     }[];
+// }
 
 // ========================================
 // API Client with ALL Endpoints
@@ -240,6 +248,17 @@ export const invoicePaymentsApi = {
             `/invoice-payments/party/${partyId}/history`,
             { params }
         );
+        return data.data;
+    },
+
+    // Get cash flow analysis
+    getCashFlowAnalysis: async (params?: {
+        startDate?: string;
+        endDate?: string;
+    }): Promise<CashFlowAnalysis> => {
+        const { data } = await apiClient.get("/invoice-payments/cash-flow", {
+            params,
+        });
         return data.data;
     },
 

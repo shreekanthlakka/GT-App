@@ -4,7 +4,7 @@ import {
     KafkaMessage,
     SendWhatsAppEvent,
 } from "@repo/common-backend/interfaces";
-import { NotificationService } from "../../services/notificationServices";
+import { NotificationService } from "../apps/notification/src/services/notificationServices";
 import { LogCategory, logger } from "@repo/common-backend/logger";
 
 export class SendWhatsappConsumer extends KafkaConsumer<SendWhatsAppEvent> {

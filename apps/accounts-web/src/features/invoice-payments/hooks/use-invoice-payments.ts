@@ -8,6 +8,8 @@ import type {
     UpdateInvoicePaymentType,
     InvoicePaymentQueryType,
 } from "@repo/common/schemas";
+import { AxiosError } from "axios";
+import { ApiErrorResponse } from "@repo/common/types";
 
 export const INVOICE_PAYMENT_QUERY_KEYS = {
     all: ["invoice-payments"] as const,
@@ -153,7 +155,7 @@ export const useRetryPayment = () => {
             });
             toast.success("Payment retry initiated");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to retry payment"
             );
@@ -174,7 +176,7 @@ export const useCancelPayment = () => {
             });
             toast.success("Payment cancelled successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to cancel payment"
             );
@@ -202,7 +204,7 @@ export const useRefundPayment = () => {
             });
             toast.success("Payment refunded successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to refund payment"
             );
@@ -223,7 +225,7 @@ export const useCreateInvoicePayment = () => {
             });
             toast.success("Payment created successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to create payment"
             );
@@ -246,7 +248,7 @@ export const useUpdateInvoicePayment = (id: string) => {
             });
             toast.success("Payment updated successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to update payment"
             );
@@ -265,7 +267,7 @@ export const useDeleteInvoicePayment = () => {
             });
             toast.success("Payment deleted successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to delete payment"
             );
@@ -291,7 +293,7 @@ export const useMarkChequeClearance = (id: string) => {
             });
             toast.success("Cheque clearance marked successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message ||
                     "Failed to mark cheque clearance"

@@ -18,7 +18,7 @@ export const PaymentAnalyticsPage = () => {
 
     const { data: analytics, isLoading: analyticsLoading } =
         usePaymentAnalytics(dateRange);
-    const { data: summary, isLoading: summaryLoading } = usePaymentSummary();
+    const { isLoading: summaryLoading } = usePaymentSummary();
 
     if (analyticsLoading || summaryLoading) {
         return <Skeleton className="h-96 w-full" />;
@@ -43,7 +43,7 @@ export const PaymentAnalyticsPage = () => {
                                 Total Payments
                             </p>
                             <p className="text-2xl font-bold">
-                                {analytics?.totalPayments}
+                                {analytics?.summary.totalPayments}
                             </p>
                         </div>
                         <DollarSign className="w-8 h-8 text-blue-500" />
@@ -57,7 +57,8 @@ export const PaymentAnalyticsPage = () => {
                                 Total Amount
                             </p>
                             <p className="text-2xl font-bold">
-                                ₹{analytics?.totalAmount.toLocaleString()}
+                                ₹
+                                {analytics?.summary.totalAmount.toLocaleString()}
                             </p>
                         </div>
                         <TrendingUp className="w-8 h-8 text-green-500" />
@@ -69,7 +70,8 @@ export const PaymentAnalyticsPage = () => {
                         <div>
                             <p className="text-sm text-gray-600">Avg Payment</p>
                             <p className="text-2xl font-bold">
-                                ₹{analytics?.avgPaymentAmount.toLocaleString()}
+                                ₹
+                                {analytics?.summary.averagePayment.toLocaleString()}
                             </p>
                         </div>
                         <BarChart className="w-8 h-8 text-purple-500" />
@@ -81,7 +83,8 @@ export const PaymentAnalyticsPage = () => {
                         <div>
                             <p className="text-sm text-gray-600">Pending</p>
                             <p className="text-2xl font-bold text-orange-600">
-                                ₹{analytics?.pendingAmount.toLocaleString()}
+                                ₹
+                                {analytics?.summary.completedPayments.toLocaleString()}
                             </p>
                         </div>
                         <CreditCard className="w-8 h-8 text-orange-500" />
@@ -95,7 +98,7 @@ export const PaymentAnalyticsPage = () => {
                     Payments by Method
                 </h3>
                 <div className="space-y-3">
-                    {analytics?.paymentsByMethod.map((method) => (
+                    {analytics?.methodBreakdown.map((method) => (
                         <div
                             key={method.method}
                             className="flex items-center justify-between"
@@ -108,7 +111,7 @@ export const PaymentAnalyticsPage = () => {
                                     <div
                                         className="bg-blue-500 h-2 rounded-full"
                                         style={{
-                                            width: `${(method.amount / analytics.totalAmount) * 100}%`,
+                                            width: `${(method.amount / analytics.summary.totalAmount) * 100}%`,
                                         }}
                                     />
                                 </div>
@@ -132,31 +135,29 @@ export const PaymentAnalyticsPage = () => {
                     Top Suppliers by Payments
                 </h3>
                 <div className="space-y-2">
-                    {analytics?.paymentsByParty
-                        .slice(0, 5)
-                        .map((party, index) => (
-                            <div
-                                key={party.partyId}
-                                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
-                                        {index + 1}
-                                    </div>
-                                    <div>
-                                        <div className="font-medium">
-                                            {party.partyName}
-                                        </div>
-                                        <div className="text-sm text-gray-600">
-                                            {party.count} payments
-                                        </div>
-                                    </div>
+                    {analytics?.topParties.slice(0, 5).map((party, index) => (
+                        <div
+                            key={party.party.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
+                                    {index + 1}
                                 </div>
-                                <div className="text-right font-semibold text-green-600">
-                                    ₹{party.amount.toLocaleString()}
+                                <div>
+                                    <div className="font-medium">
+                                        {party.party.name}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        {party.paymentCount} payments
+                                    </div>
                                 </div>
                             </div>
-                        ))}
+                            <div className="text-right font-semibold text-green-600">
+                                ₹{party.totalAmount.toLocaleString()}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </Card>
         </div>

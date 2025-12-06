@@ -8,7 +8,8 @@ import type {
     UpdateInvoiceType,
     InvoiceQueryType,
 } from "@repo/common/schemas";
-import { DateRange } from "@repo/common/types";
+import { ApiErrorResponse, DateRange } from "@repo/common/types";
+import { AxiosError } from "axios";
 
 export const INVOICE_QUERY_KEYS = {
     all: ["invoices"] as const,
@@ -55,7 +56,7 @@ export const useCreateInvoice = () => {
             });
             toast.success("Invoice created successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to create invoice"
             );
@@ -77,7 +78,7 @@ export const useUpdateInvoice = (id: string) => {
             });
             toast.success("Invoice updated successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to update invoice"
             );
@@ -95,7 +96,7 @@ export const useDeleteInvoice = () => {
             });
             toast.success("Invoice deleted successfully");
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorResponse>) => {
             toast.error(
                 error?.response?.data?.message || "Failed to delete invoice"
             );

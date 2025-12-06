@@ -9,7 +9,7 @@ import type {
 import {
     Sale,
     PaginatedResponse,
-    SaleAnalytics,
+    SalesAnalytics,
     DateRange,
 } from "@repo/common/types";
 
@@ -134,7 +134,7 @@ export const salesApi = {
     },
 
     // Get sale analytics
-    getSaleAnalytics: async (params?: DateRange): Promise<SaleAnalytics> => {
+    getSaleAnalytics: async (params?: DateRange): Promise<SalesAnalytics> => {
         const { data } = await apiClient.get("/sales/analytics", { params });
         return data.data;
     },

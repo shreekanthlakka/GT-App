@@ -15,6 +15,11 @@ import {
 } from "@repo/common/types";
 
 export const invoicesApi = {
+    // ========================================
+    // CRUD Operations
+    // ========================================
+
+    // Get all invoices with filters
     getInvoices: async (
         params?: InvoiceQueryType
     ): Promise<PaginatedResponse<Invoice>> => {
@@ -22,6 +27,7 @@ export const invoicesApi = {
         return data;
     },
 
+    // Get invoice by ID
     getInvoiceById: async (id: string): Promise<Invoice> => {
         const { data } = await apiClient.get(`/invoices/${id}`);
         return data.data;
@@ -49,10 +55,19 @@ export const invoicesApi = {
         return data.data;
     },
 
+    // Get invoice analytics
     getInvoiceAnalytics: async (
         params?: DateRange
     ): Promise<InvoiceAnalytics> => {
         const { data } = await apiClient.get("/invoices/analytics", { params });
+        return data.data;
+    },
+
+    // Get invoice by invoice number
+    getInvoiceByInvoiceNo: async (invoiceNo: string): Promise<Invoice> => {
+        const { data } = await apiClient.get(
+            `/invoices/invoice-no/${invoiceNo}`
+        );
         return data.data;
     },
 };
