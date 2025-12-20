@@ -1,3 +1,25 @@
+// export { prisma } from "./client";
+
+// export {
+//     SaleStatus,
+//     OCRStatus,
+//     NotificationType,
+//     InvoiceStatus,
+//     LedgerType,
+// } from "./generated/prisma";
+
+// // export * from "./generated/prisma";
+
+// export type { Prisma } from "./generated/prisma";
+
+// export type {
+//     EcommerceUserSession,
+//     LedgerEntry,
+//     Invoice,
+//     InvoicePayment,
+//     SaleReceipt,
+// } from "./generated/prisma";
+
 export { prisma } from "./client";
 
 export {
@@ -6,11 +28,11 @@ export {
     NotificationType,
     InvoiceStatus,
     LedgerType,
-} from "./generated/prisma";
+} from "@prisma/client";
 
 // export * from "./generated/prisma";
 
-export type { Prisma } from "./generated/prisma";
+export type { Prisma } from "@prisma/client";
 
 export type {
     EcommerceUserSession,
@@ -18,4 +40,4 @@ export type {
     Invoice,
     InvoicePayment,
     SaleReceipt,
-} from "./generated/prisma";
+} from "@prisma/client";

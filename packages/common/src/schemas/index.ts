@@ -1,3 +1,5 @@
+// package/common/src/schemas/index.ts
+
 export * from "./authSchemas";
 export * from "./customerSchemas";
 export * from "./partySchemas";
@@ -10,6 +12,8 @@ export * from "./notificationSchemas";
 export * from "./templateSchemas";
 export * from "./dashboardSchemas";
 export * from "./saleReceiptSchemas";
+
+export { LoginSchema } from "./authSchemas";
 
 // Common validation schemas
 import { z } from "zod";
@@ -114,6 +118,17 @@ export const CashCountSchema = z.object({
     variance: z.number(),
     notes: z.string().optional(),
 });
+
+export const PaymentStatusSchema = z.enum([
+    "PENDING",
+    "PARTIALLY_PAID",
+    "PAID",
+    "OVERDUE",
+    "CANCELLED",
+    "RETURNED",
+]);
+export type PaymentStatusType = z.infer<typeof PaymentStatusSchema>;
+export type PaymentStatusFilter = PaymentStatusType | "";
 
 export type PaginationType = z.infer<typeof PaginationSchema>;
 export type DateRangeType = z.infer<typeof DateRangeSchema>;

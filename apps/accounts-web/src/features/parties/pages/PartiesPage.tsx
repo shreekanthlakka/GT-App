@@ -5,15 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useParties, useDeleteParty } from "../hooks/use-parties";
 import { Button, Input, Card, Table, Badge, Skeleton } from "@repo/ui";
 import { useDebounce } from "@repo/ui";
-import {
-    Plus,
-    Search,
-    Eye,
-    Edit,
-    Trash2,
-    FileText,
-    Building,
-} from "lucide-react";
+import { Plus, Search, Eye, Edit, Trash2, Building } from "lucide-react";
 
 const PartiesPage = () => {
     const navigate = useNavigate();
@@ -33,7 +25,8 @@ const PartiesPage = () => {
         state: stateFilter || undefined,
         isActive: activeFilter ? activeFilter === "true" : undefined,
         category: categoryFilter || undefined,
-    } as any);
+        sortOrder: "desc",
+    });
 
     const deleteMutation = useDeleteParty();
 

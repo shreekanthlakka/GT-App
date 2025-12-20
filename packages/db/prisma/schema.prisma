@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  // output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -59,6 +59,7 @@ model User {
   backupSchedule   BackupSchedule?
   auditLogs        AuditLog[]
   stockMovements   StockMovement[]
+  bankDetails      BankDetails[]
 
   @@map("users")
 }
@@ -253,7 +254,7 @@ model Party {
   state         String?
   pincode       String?
   contactPerson String?
-  bankDetails   Json?   // {bankName, accountNo, ifsc, branch}
+  bankDetails   BankDetails[]   // {bankName, accountNo, ifsc, branch}
   
   // Additional fields
   category      String?  // Manufacturer, Distributor, Wholesaler
@@ -282,6 +283,30 @@ model Party {
   @@index([gstNo])
   @@map("parties")
 }
+
+model BankDetails {
+  id          String  @id @default(cuid())
+  bankName    String
+  accountNo   String
+  ifsc        String
+  branch      String?
+  accountType String?  // Savings, Current, etc.
+  isDefault   Boolean  @default(false)
+
+
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  partyId     String?
+  party       Party?    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("bank_details")
+}
+
 
 // ========================================
 // INVENTORY MANAGEMENT

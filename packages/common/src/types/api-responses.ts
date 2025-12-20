@@ -1943,6 +1943,83 @@ export interface PartyComparisonAnalytics {
     };
 }
 
+export interface PartyOutstanding {
+    party: {
+        id: string;
+        name: string;
+        gstNo?: string | null;
+        phone?: string | null;
+        email?: string | null;
+        creditLimit: number;
+        paymentTerms?: number | null;
+    };
+    summary: {
+        totalOutstanding: number;
+        overdueAmount: number;
+        pendingAmount: number;
+        partiallyPaidAmount: number;
+        currentBalance: number;
+        creditLimit: number;
+        creditUtilization: number; // percentage
+        creditAvailable: number;
+    };
+    invoices: {
+        all: OutstandingInvoice[];
+        overdue: OutstandingInvoice[];
+        pending: OutstandingInvoice[];
+        partiallyPaid: OutstandingInvoice[];
+    };
+    counts: {
+        total: number;
+        overdue: number;
+        pending: number;
+        partiallyPaid: number;
+    };
+}
+
+export interface OutstandingInvoice {
+    id: string;
+    voucherId: string;
+    invoiceNo: string;
+    date: string;
+    dueDate?: string | null;
+    amount: number;
+    paidAmount: number;
+    remainingAmount: number;
+    status: InvoiceStatus;
+    description?: string | null;
+    notes?: string | null;
+    daysOverdue: number; // 0 if not overdue
+}
+
+export interface TopParty {
+    partyId: string;
+    partyName: string;
+    category?: string | null;
+    city?: string | null;
+    state?: string | null;
+    gstNo?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    metrics: {
+        totalInvoiced: number;
+        totalPaid: number;
+        totalOutstanding: number;
+        invoiceCount: number;
+        paymentCount: number;
+        averageInvoiceValue: number;
+        paymentRate: number; // percentage
+        outstandingRate: number; // percentage
+    };
+}
+
+export interface TopPartiesResponse {
+    period: {
+        startDate: string;
+        endDate: string;
+    };
+    topParties: TopParty[];
+}
 // ============================================
 // ACCOUNTS SERVICE - INVOICE TYPES
 // ============================================

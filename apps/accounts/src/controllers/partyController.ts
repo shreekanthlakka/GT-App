@@ -34,7 +34,9 @@ export const createParty = asyncHandler(async (req, res) => {
         state,
         pincode,
         contactPerson,
-        bankDetails,
+        bankName,
+        accountNo,
+        ifscCode,
         category,
         paymentTerms,
         creditLimit = 0,
@@ -81,7 +83,13 @@ export const createParty = asyncHandler(async (req, res) => {
             state,
             pincode,
             contactPerson,
-            bankDetails,
+            bankDetails:
+                bankName && accountNo && ifscCode
+                    ? {
+                          create: { bankName, accountNo, ifsc: ifscCode },
+                      }
+                    : undefined,
+
             category,
             paymentTerms,
             creditLimit,
@@ -89,6 +97,9 @@ export const createParty = asyncHandler(async (req, res) => {
             website,
             notes,
             userId,
+        },
+        include: {
+            bankDetails: true,
         },
     });
 
@@ -113,6 +124,9 @@ export const createParty = asyncHandler(async (req, res) => {
     const partyCreatedPublisher = new PartyCreatedPublisher(
         kafkaWrapper.producer
     );
+
+    const defaultBank =
+        party.bankDetails.find((b) => b.isDefault) ?? party.bankDetails[0];
     await partyCreatedPublisher.publish({
         id: party.id,
         name: party.name,
@@ -125,7 +139,14 @@ export const createParty = asyncHandler(async (req, res) => {
         state: party.state || undefined,
         pincode: party.pincode || undefined,
         contactPerson: party.contactPerson || undefined,
-        bankDetails: party.bankDetails,
+        bankDetails: defaultBank
+            ? {
+                  bankName: defaultBank.bankName,
+                  accountNo: defaultBank.accountNo,
+                  ifsc: defaultBank.ifsc,
+                  branch: defaultBank.branch ?? undefined,
+              }
+            : undefined,
         category: party.category || undefined,
         paymentTerms: party.paymentTerms || undefined,
         creditLimit: Number(party.creditLimit),
@@ -1152,6 +1173,456 @@ export const getPartyComparison = asyncHandler(async (req, res) => {
                           ) / comparisonData.length
                         : 0,
             },
+        }
+    );
+    res.status(response.statusCode).json(response);
+});
+
+/**
+ * ==========================================================================================
+ * Get all invoices for a party
+ * @route GET /api/v1/parties/:id/invoices
+ * @access Private
+ * @param {string} id - Party ID
+ * @param {number} page - Page number (default: 1)
+ * @param {number} limit - Items per page (default: 10)
+ * @param {string} status - Filter by status (optional)
+ * @param {string} sortBy - Sort field (default: date)
+ * @param {string} sortOrder - Sort order (default: desc)
+ * @returns {object} - Paginated invoices for the party
+ * @throws {CustomError} - If party not found or unauthorized
+ * @example
+ * GET /api/v1/parties/123/invoices?page=1&limit=10&status=PENDING
+ * ==========================================================================================
+ */
+
+export const getPartyInvoices = asyncHandler(async (req, res) => {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+    const {
+        page = 1,
+        limit = 10,
+        status,
+        sortBy = "date",
+        sortOrder = "desc",
+    } = req.query;
+
+    if (!userId || !id) {
+        throw new CustomError(400, "User ID and Party ID required");
+    }
+
+    // Verify party belongs to user
+    const party = await prisma.party.findFirst({
+        where: { id, userId },
+        select: { id: true, name: true },
+    });
+
+    if (!party) {
+        throw new CustomError(404, "Party not found");
+    }
+
+    // Build where clause
+    const whereClause: any = {
+        partyId: id,
+        userId,
+    };
+
+    // Add status filter if provided
+    if (status) {
+        whereClause.status = status;
+    }
+
+    // Get total count
+    const total = await prisma.invoice.count({ where: whereClause });
+
+    // Get paginated invoices
+    const invoices = await prisma.invoice.findMany({
+        where: whereClause,
+        select: {
+            id: true,
+            voucherId: true,
+            invoiceNo: true,
+            date: true,
+            dueDate: true,
+            amount: true,
+            paidAmount: true,
+            remainingAmount: true,
+            status: true,
+            taxAmount: true,
+            discountAmount: true,
+            description: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true,
+        },
+        orderBy: { [sortBy as string]: sortOrder },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+    });
+
+    logger.info("Party invoices retrieved", LogCategory.PARTY, {
+        partyId: id,
+        partyName: party.name,
+        invoiceCount: invoices.length,
+        total,
+        page,
+        limit,
+    });
+
+    const response = new CustomResponse(
+        200,
+        "Party invoices retrieved successfully",
+        {
+            party: {
+                id: party.id,
+                name: party.name,
+            },
+            invoices,
+            pagination: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                pages: Math.ceil(total / Number(limit)),
+            },
+        }
+    );
+    res.status(response.statusCode).json(response);
+});
+
+/**
+ * ==========================================================================================
+ * Get party outstanding balance and invoices
+ * @route GET /api/v1/parties/:id/outstanding
+ * @access Private
+ * @param {string} id - Party ID
+ * @returns {object} - Outstanding balance and unpaid invoices
+ * @throws {CustomError} - If party not found or unauthorized
+ * ==========================================================================================
+ */
+
+export const getPartyOutstanding = asyncHandler(async (req, res) => {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+
+    if (!userId || !id) {
+        throw new CustomError(400, "User ID and Party ID required");
+    }
+
+    // Verify party belongs to user
+    const party = await prisma.party.findFirst({
+        where: { id, userId },
+        select: {
+            id: true,
+            name: true,
+            gstNo: true,
+            phone: true,
+            email: true,
+            creditLimit: true,
+            paymentTerms: true,
+        },
+    });
+
+    if (!party) {
+        throw new CustomError(404, "Party not found");
+    }
+
+    // Get outstanding invoices
+    const outstandingInvoices = await prisma.invoice.findMany({
+        where: {
+            partyId: id,
+            userId,
+            status: { in: ["PENDING", "PARTIALLY_PAID", "OVERDUE"] },
+        },
+        select: {
+            id: true,
+            voucherId: true,
+            invoiceNo: true,
+            date: true,
+            dueDate: true,
+            amount: true,
+            paidAmount: true,
+            remainingAmount: true,
+            status: true,
+            description: true,
+            notes: true,
+        },
+        orderBy: { dueDate: "asc" },
+    });
+
+    // Calculate totals
+    const totalOutstanding = outstandingInvoices.reduce(
+        (sum: number, inv: any) => sum + Number(inv.remainingAmount),
+        0
+    );
+
+    const overdueInvoices = outstandingInvoices.filter(
+        (inv) => inv.status === "OVERDUE"
+    );
+    const overdueAmount = overdueInvoices.reduce(
+        (sum: number, inv: any) => sum + Number(inv.remainingAmount),
+        0
+    );
+
+    const pendingInvoices = outstandingInvoices.filter(
+        (inv: any) => inv.status === "PENDING"
+    );
+    const pendingAmount = pendingInvoices.reduce(
+        (sum: number, inv: any) => sum + Number(inv.remainingAmount),
+        0
+    );
+
+    const partiallyPaidInvoices = outstandingInvoices.filter(
+        (inv) => inv.status === "PARTIALLY_PAID"
+    );
+    const partiallyPaidAmount = partiallyPaidInvoices.reduce(
+        (sum: number, inv: any) => sum + Number(inv.remainingAmount),
+        0
+    );
+
+    // Calculate days overdue
+    const now = new Date();
+    const invoicesWithDaysOverdue = outstandingInvoices.map(
+        (inv: (typeof outstandingInvoices)[0]) => {
+            const daysOverdue =
+                inv.status === "OVERDUE" && inv.dueDate
+                    ? Math.floor(
+                          (now.getTime() - new Date(inv.dueDate).getTime()) /
+                              (1000 * 60 * 60 * 24)
+                      )
+                    : 0;
+
+            return {
+                ...inv,
+                daysOverdue: daysOverdue > 0 ? daysOverdue : 0,
+            };
+        }
+    );
+
+    // Get ledger balance
+    const balance = await LedgerService.getPartyBalance(party.id);
+
+    // Credit limit utilization
+    const creditLimit = Number(party.creditLimit);
+    const creditUtilization =
+        creditLimit > 0 ? (totalOutstanding / creditLimit) * 100 : 0;
+
+    logger.info("Party outstanding retrieved", LogCategory.PARTY, {
+        partyId: id,
+        partyName: party.name,
+        totalOutstanding,
+        overdueAmount,
+        invoiceCount: outstandingInvoices.length,
+    });
+
+    const response = new CustomResponse(
+        200,
+        "Party outstanding retrieved successfully",
+        {
+            party: {
+                id: party.id,
+                name: party.name,
+                gstNo: party.gstNo,
+                phone: party.phone,
+                email: party.email,
+                creditLimit: party.creditLimit,
+                paymentTerms: party.paymentTerms,
+            },
+            summary: {
+                totalOutstanding,
+                overdueAmount,
+                pendingAmount,
+                partiallyPaidAmount,
+                currentBalance: balance.balance,
+                creditLimit,
+                creditUtilization: Math.round(creditUtilization * 100) / 100,
+                creditAvailable:
+                    creditLimit > totalOutstanding
+                        ? creditLimit - totalOutstanding
+                        : 0,
+            },
+            invoices: {
+                all: invoicesWithDaysOverdue,
+                overdue: invoicesWithDaysOverdue.filter(
+                    (inv: (typeof invoicesWithDaysOverdue)[0]) =>
+                        inv.status === "OVERDUE"
+                ),
+                pending: invoicesWithDaysOverdue.filter(
+                    (inv: (typeof invoicesWithDaysOverdue)[0]) =>
+                        inv.status === "PENDING"
+                ),
+                partiallyPaid: invoicesWithDaysOverdue.filter(
+                    (inv: (typeof invoicesWithDaysOverdue)[0]) =>
+                        inv.status === "PARTIALLY_PAID"
+                ),
+            },
+            counts: {
+                total: outstandingInvoices.length,
+                overdue: overdueInvoices.length,
+                pending: pendingInvoices.length,
+                partiallyPaid: partiallyPaidInvoices.length,
+            },
+        }
+    );
+    res.status(response.statusCode).json(response);
+});
+
+/**
+ * ==========================================================================================
+ * Get top parties by invoice volume
+ * @route GET /api/v1/parties/analytics/top
+ * @access Private
+ * ==========================================================================================
+ */
+
+export const getTopParties = asyncHandler(async (req, res) => {
+    const userId = req.user?.userId;
+    const { limit = 10, startDate, endDate, sortBy = "amount" } = req.query;
+
+    if (!userId) {
+        throw new CustomError(401, "Unauthorized");
+    }
+
+    const start = startDate
+        ? new Date(startDate as string)
+        : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const end = endDate ? new Date(endDate as string) : new Date();
+
+    const whereClause: any = {
+        userId,
+        date: { gte: start, lte: end },
+    };
+
+    // Get top parties by invoice amount
+    const topPartiesByInvoice = await prisma.invoice.groupBy({
+        by: ["partyId"],
+        where: whereClause,
+        _sum: {
+            amount: true,
+            remainingAmount: true,
+            paidAmount: true,
+        },
+        _count: {
+            _all: true,
+        },
+        orderBy: {
+            _sum: {
+                amount: sortBy === "amount" ? "desc" : undefined,
+            },
+            _count: {
+                id: sortBy === "count" ? "desc" : undefined,
+            },
+        },
+        take: Number(limit),
+    });
+
+    // Get party details
+    const partyIds = topPartiesByInvoice.map((tp: any) => tp.partyId);
+    const parties = await prisma.party.findMany({
+        where: { id: { in: partyIds } },
+        select: {
+            id: true,
+            name: true,
+            category: true,
+            city: true,
+            state: true,
+            gstNo: true,
+            phone: true,
+            email: true,
+        },
+    });
+
+    // Get payment counts for each party
+    const paymentCounts = await prisma.invoicePayment.groupBy({
+        by: ["partyId"],
+        where: {
+            partyId: { in: partyIds },
+            userId,
+            date: { gte: start, lte: end },
+        },
+        _count: true,
+        _sum: { amount: true },
+    });
+
+    // Combine data
+    const topPartiesWithDetails = topPartiesByInvoice.map(
+        (tp: (typeof topPartiesByInvoice)[0]) => {
+            const party = parties.find(
+                (p: (typeof parties)[0]) => p.id === tp.partyId
+            );
+            const payments = paymentCounts.find(
+                (pc: (typeof paymentCounts)[0]) => pc.partyId === tp.partyId
+            );
+
+            const totalInvoiced = Number(tp._sum?.amount || 0);
+            const totalPaid = Number(tp._sum?.paidAmount || 0);
+            const totalOutstanding = Number(tp._sum?.remainingAmount || 0);
+
+            return {
+                partyId: tp.partyId,
+                partyName: party?.name || "Unknown",
+                category: party?.category,
+                city: party?.city,
+                state: party?.state,
+                gstNo: party?.gstNo,
+                phone: party?.phone,
+                email: party?.email,
+                metrics: {
+                    totalInvoiced,
+                    totalPaid,
+                    totalOutstanding,
+                    invoiceCount: tp._count,
+                    paymentCount: payments?._count || 0,
+                    averageInvoiceValue:
+                        Number(tp._count) > 0
+                            ? totalInvoiced / Number(tp._count)
+                            : 0,
+                    paymentRate:
+                        totalInvoiced > 0
+                            ? (totalPaid / totalInvoiced) * 100
+                            : 0,
+                    outstandingRate:
+                        totalInvoiced > 0
+                            ? (totalOutstanding / totalInvoiced) * 100
+                            : 0,
+                },
+            };
+        }
+    );
+
+    // Sort based on sortBy parameter
+    let sortedParties = topPartiesWithDetails;
+    if (sortBy === "outstanding") {
+        sortedParties.sort(
+            (
+                a: (typeof topPartiesWithDetails)[0],
+                b: (typeof topPartiesWithDetails)[0]
+            ) => b.metrics.totalOutstanding - a.metrics.totalOutstanding
+        );
+    } else if (sortBy === "paymentRate") {
+        sortedParties.sort(
+            (
+                a: (typeof topPartiesWithDetails)[0],
+                b: (typeof topPartiesWithDetails)[0]
+            ) => b.metrics.paymentRate - a.metrics.paymentRate
+        );
+    }
+
+    logger.info("Top parties retrieved", LogCategory.PARTY, {
+        userId,
+        limit: Number(limit),
+        count: sortedParties.length,
+        period: { start, end },
+    });
+
+    const response = new CustomResponse(
+        200,
+        "Top parties retrieved successfully",
+        {
+            period: {
+                startDate: start.toISOString(),
+                endDate: end.toISOString(),
+            },
+            topParties: sortedParties,
         }
     );
     res.status(response.statusCode).json(response);

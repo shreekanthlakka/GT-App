@@ -25,6 +25,10 @@ router
     );
 
 router
+    .route("/sessions/:sessionId")
+    .delete(authenticate, authorize(["OWNER"]), terminateUserSession);
+
+router
     .route("/:id")
     .get(
         authenticate,
@@ -49,9 +53,5 @@ router
         validateUserId,
         getUserSession
     );
-
-router
-    .route("/sessions/:sessionId")
-    .delete(authenticate, authorize(["OWNER"]), terminateUserSession);
 
 export default router;

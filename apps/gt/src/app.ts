@@ -30,14 +30,20 @@ app.use((req, res, next) => {
 //                   ROUTES
 // ==============================================
 
+console.log("Registering cartRoutes...");
 app.use("/api/v1/cart", cartRoutes);
+console.log("Registering orderRoutes...");
 app.use("/api/v1/order", orderRoutes);
+console.log("Registering profileRoutes...");
 app.use("/api/v1/profile", profileRoutes);
+console.log("Registering reviewRoutes...");
 app.use("/api/v1/review", reviewRoutes);
+console.log("Registering wishlistRoutes...");
 app.use("/api/v1/wishlist", wishlistRoutes);
+console.log("Registering addressRoutes...");
 app.use("/api/v1/address", addressRoutes);
 
-app.use("*", (req, res) => {
+app.use((req, res) => {
     res.status(404).json({
         status: 404,
         message: "Route not found",

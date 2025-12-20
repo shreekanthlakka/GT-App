@@ -20,8 +20,13 @@ export const PARTY_QUERY_KEYS = {
     detail: (id: string) => [...PARTY_QUERY_KEYS.details(), id] as const,
     invoices: (id: string) =>
         [...PARTY_QUERY_KEYS.all, "invoices", id] as const,
-    ledger: (id: string, params?: DateRange) =>
-        [...PARTY_QUERY_KEYS.all, "ledger", id, params] as const,
+    ledger: (
+        id: string,
+        params?: {
+            startDate?: string;
+            endDate?: string;
+        }
+    ) => [...PARTY_QUERY_KEYS.all, "ledger", id, params] as const,
     statement: (id: string, params: DateRange) =>
         [...PARTY_QUERY_KEYS.all, "statement", id, params] as const,
     outstanding: (id: string) =>
@@ -31,8 +36,12 @@ export const PARTY_QUERY_KEYS = {
         endDate?: string;
         metric?: string;
     }) => [...PARTY_QUERY_KEYS.all, "comparison", params] as const,
-    topParties: (limit: number) =>
-        [...PARTY_QUERY_KEYS.all, "top-parties", limit] as const,
+    topParties: (params?: {
+        limit: number;
+        startDate?: string;
+        endDate?: string;
+        sortBy?: "amount" | "count" | "outstanding" | "paymentRate";
+    }) => [...PARTY_QUERY_KEYS.all, "top-parties", params] as const,
 };
 
 // ========================================
@@ -62,7 +71,13 @@ export const usePartyInvoices = (id: string) => {
     });
 };
 
-export const usePartyLedger = (id: string, params?: DateRange) => {
+export const usePartyLedger = (
+    id: string,
+    params?: {
+        startDate?: string;
+        endDate?: string;
+    }
+) => {
     return useQuery({
         queryKey: PARTY_QUERY_KEYS.ledger(id, params),
         queryFn: () => partiesApi.getPartyLedger(id, params),
@@ -97,10 +112,18 @@ export const usePartyComparison = (params?: {
     });
 };
 
-export const useTopParties = (limit: number = 10) => {
+export const useTopParties = (
+    limit: number = 10,
+    params?: {
+        startDate?: string;
+        endDate?: string;
+        sortBy?: "amount" | "count" | "outstanding" | "paymentRate";
+    }
+) => {
+    const queryParams = { limit, ...params };
     return useQuery({
-        queryKey: PARTY_QUERY_KEYS.topParties(limit),
-        queryFn: () => partiesApi.getTopParties(limit),
+        queryKey: PARTY_QUERY_KEYS.topParties(queryParams),
+        queryFn: () => partiesApi.getTopParties(queryParams),
     });
 };
 

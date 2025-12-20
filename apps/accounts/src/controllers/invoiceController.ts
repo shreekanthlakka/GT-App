@@ -912,9 +912,12 @@ export const getOverdueInvoices = asyncHandler(async (req, res) => {
 
 export const getInvoiceAnalytics = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
-    const { startDate, endDate, partyId, status } = req.query;
+    const { startDate, endDate, status } = req.query;
 
     if (!userId) return;
+    const rawPartyId = req.query.partyId;
+
+    const partyId = typeof rawPartyId === "string" ? rawPartyId : undefined;
 
     const start = startDate
         ? new Date(startDate as string)
@@ -950,7 +953,7 @@ export const getInvoiceAnalytics = asyncHandler(async (req, res) => {
                 where: {
                     userId,
                     date: { gte: start, lte: end },
-                    ...(partyId ? { partyId } : {}),
+                    ...(partyId && { partyId }),
                 },
                 _sum: { amount: true },
                 _count: true,
@@ -1071,9 +1074,9 @@ export const getInvoiceAnalytics = asyncHandler(async (req, res) => {
                 invoiceCount: invoiceStats._count,
                 averageInvoiceValue: invoiceStats._avg.amount || 0,
                 paymentRate: invoiceStats._sum.amount
-                    ? (((invoiceStats._sum.amount || 0) -
-                          (invoiceStats._sum.remainingAmount || 0)) /
-                          invoiceStats._sum.amount) *
+                    ? ((Number(invoiceStats._sum.amount || 0) -
+                          Number(invoiceStats._sum.remainingAmount || 0)) /
+                          Number(invoiceStats._sum.amount)) *
                       100
                     : 0,
                 overdueCount: overdueStats._count,

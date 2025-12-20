@@ -13,8 +13,8 @@ const CreatePartyPage = () => {
     const navigate = useNavigate();
     const createMutation = useCreateParty();
 
-    const handleSubmit = async (data: CreatePartyType) => {
-        await createMutation.mutateAsync(data);
+    const handleSubmit = async (data: CreatePartyType | UpdatePartyType) => {
+        await createMutation.mutateAsync(data as CreatePartyType);
         navigate("/parties");
     };
 

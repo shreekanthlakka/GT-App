@@ -13,7 +13,7 @@ import {
 } from "@repo/ui";
 import { useAuth } from "../hooks/use-auth";
 // import { LoginSchema, type LoginFormValues } from "../schemas/auth.schema";
-import { LoginSchema, type LoginType } from "@repo/common/schemas";
+import { LoginSchema, LoginType } from "@repo/common/schemas";
 
 export default function LoginPage() {
     const { login, isLoggingIn, isAuthenticated } = useAuth();

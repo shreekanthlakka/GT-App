@@ -27,11 +27,14 @@ app.use((req, res, next) => {
 //                   ROUTES
 // ==============================================
 
+console.log("Registering dashboardRoutes...");
 app.use("/api/v1/dashboard", dashboardRoutes);
+console.log("Registering notificationRoutes...");
 app.use("/api/v1/notification", notificationRoutes);
+console.log("Registering templateRoutes...");
 app.use("/api/v1/template", templateRoutes);
 
-app.use("*", (req, res) => {
+app.use((req, res) => {
     res.status(404).json({
         status: 404,
         message: "Route not found",

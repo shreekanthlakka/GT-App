@@ -783,7 +783,7 @@ export const deleteSaleReceipt = asyncHandler(async (req, res) => {
         receiptNo: receipt.receiptNo,
         customerId: receipt.customerId,
         customerName: receipt.customer.name,
-        saleId: receipt.saleId,
+        saleId: receipt.saleId || undefined,
         saleNo: receipt.sale?.saleNo,
         amount: Number(receipt.amount),
         method: receipt.method,
@@ -983,7 +983,7 @@ export const getSaleReceiptAnalytics = asyncHandler(async (req, res) => {
                     amount: mb._sum.amount || 0,
                     count: mb._count,
                     percentage: receiptsStats._sum.amount
-                        ? ((mb._sum.amount || 0) /
+                        ? (Number(mb._sum.amount || 0) /
                               Number(receiptsStats._sum.amount)) *
                           100
                         : 0,

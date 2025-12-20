@@ -1119,39 +1119,48 @@ export const getInventoryAnalytics = asyncHandler(
             },
         });
 
-        const movementSummary = recentMovements.reduce(
-            (
-                acc: {
-                    stockAdded: number;
-                    stockReduced: number;
-                    adjustmentsUp: number;
-                    adjustmentsDown: number;
-                },
-                movement: {
+        const movementSummary = recentMovements
+            .filter(
+                (
+                    m
+                ): m is {
                     type: "IN" | "OUT" | "ADJUSTMENT";
                     quantity: number;
-                }
-            ) => {
-                if (movement.type === "IN") {
-                    acc.stockAdded += Math.abs(movement.quantity);
-                } else if (movement.type === "OUT") {
-                    acc.stockReduced += Math.abs(movement.quantity);
-                } else if (movement.type === "ADJUSTMENT") {
-                    if (movement.quantity > 0) {
-                        acc.adjustmentsUp += movement.quantity;
-                    } else {
-                        acc.adjustmentsDown += Math.abs(movement.quantity);
+                } => m.type !== "TRANSFER"
+            )
+            .reduce(
+                (
+                    acc: {
+                        stockAdded: number;
+                        stockReduced: number;
+                        adjustmentsUp: number;
+                        adjustmentsDown: number;
+                    },
+                    movement: {
+                        type: "IN" | "OUT" | "ADJUSTMENT";
+                        quantity: number;
                     }
+                ) => {
+                    if (movement.type === "IN") {
+                        acc.stockAdded += Math.abs(movement.quantity);
+                    } else if (movement.type === "OUT") {
+                        acc.stockReduced += Math.abs(movement.quantity);
+                    } else if (movement.type === "ADJUSTMENT") {
+                        if (movement.quantity > 0) {
+                            acc.adjustmentsUp += movement.quantity;
+                        } else {
+                            acc.adjustmentsDown += Math.abs(movement.quantity);
+                        }
+                    }
+                    return acc;
+                },
+                {
+                    stockAdded: 0,
+                    stockReduced: 0,
+                    adjustmentsUp: 0,
+                    adjustmentsDown: 0,
                 }
-                return acc;
-            },
-            {
-                stockAdded: 0,
-                stockReduced: 0,
-                adjustmentsUp: 0,
-                adjustmentsDown: 0,
-            }
-        );
+            );
 
         logger.info("Inventory analytics retrieved", LogCategory.BUSINESS, {
             userId,

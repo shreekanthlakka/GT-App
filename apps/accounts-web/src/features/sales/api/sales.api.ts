@@ -6,12 +6,7 @@ import type {
     UpdateSaleType,
     SaleQueryType,
 } from "@repo/common/schemas";
-import {
-    Sale,
-    PaginatedResponse,
-    SalesAnalytics,
-    DateRange,
-} from "@repo/common/types";
+import { Sale, PaginatedResponse, SalesAnalytics } from "@repo/common/types";
 
 // export interface SaleItem {
 //     inventoryItemId?: string;
@@ -134,7 +129,12 @@ export const salesApi = {
     },
 
     // Get sale analytics
-    getSaleAnalytics: async (params?: DateRange): Promise<SalesAnalytics> => {
+    getSaleAnalytics: async (params?: {
+        startDate?: string;
+        endDate?: string;
+        limit?: number;
+        sort?: "asc" | "desc";
+    }): Promise<SalesAnalytics> => {
         const { data } = await apiClient.get("/sales/analytics", { params });
         return data.data;
     },

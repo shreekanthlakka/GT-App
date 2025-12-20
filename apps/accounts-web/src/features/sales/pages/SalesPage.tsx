@@ -6,20 +6,25 @@ import { useSales, useDeleteSale, useCancelSale } from "../hooks/use-sales";
 import { Button, Input, Card, Table, Badge, Skeleton } from "@repo/ui";
 import { useDebounce } from "@repo/ui";
 import { Plus, Search, Eye, Trash2, XCircle } from "lucide-react";
+import { PaymentStatusType } from "@repo/common/schemas";
 
 export const SalesPage = () => {
     const navigate = useNavigate();
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
-    const [statusFilter, setStatusFilter] = useState<string>("");
+    const [statusFilter, setStatusFilter] = useState<PaymentStatusType | "">(
+        ""
+    );
     const debouncedSearch = useDebounce(search, 300);
+    const [sortOrder] = useState<"asc" | "desc">("desc");
 
     const { data, isLoading } = useSales({
         search: debouncedSearch,
         page,
         limit: 10,
         status: statusFilter || undefined,
-    } as any);
+        sortOrder,
+    });
 
     const deleteMutation = useDeleteSale();
     const cancelMutation = useCancelSale();
@@ -97,7 +102,9 @@ export const SalesPage = () => {
                     </div>
                     <select
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                        onChange={(e) =>
+                            setStatusFilter(e.target.value as PaymentStatusType)
+                        }
                         className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">All Status</option>

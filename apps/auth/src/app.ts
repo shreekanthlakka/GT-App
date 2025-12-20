@@ -27,15 +27,17 @@ app.use((req, res, next) => {
 //                   ROUTES
 // ==============================================
 
+console.log("Registering authRoutes...");
 app.use("/api/v1/internal/auth", authRoutes);
+console.log("Registering userRoutes...");
 app.use("/api/v1/internal/users", userRoutes);
-
+console.log("Registering ecommAuthRoutes...");
 app.use("/api/v1/auth", ecommAuthRoutes);
 
 // ==============================================
 // ==============================================
 
-app.use("*", (req, res) => {
+app.use((req, res) => {
     res.status(404).json({
         status: 404,
         message: "Route not found",

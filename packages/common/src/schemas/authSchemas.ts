@@ -1,3 +1,5 @@
+// packages/common/src/schemas/authSchemas.ts
+
 import { z } from "zod";
 
 export const UserRoleSchema = z.enum([

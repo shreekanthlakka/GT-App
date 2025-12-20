@@ -31,16 +31,31 @@ app.use((req, res, next) => {
 //                   ROUTES
 // ==============================================
 
+console.log("Registering accounts routes...");
 app.use("/api/v1/customers", customerRoutes);
+
+console.log("Registering party routes...");
 app.use("/api/v1/parties", partyRoutes);
+
+console.log("Registering invoice routes...");
 app.use("/api/v1/invoices", invoiceRoutes);
+
+console.log("Registering invoice payment routes...");
 app.use("/api/v1/invoice-payments", invoicePaymentRoutes);
+
+console.log("Registering inventory routes...");
 app.use("/api/v1/inventories", inventoryRoutes);
+
+console.log("Registering sale routes...");
 app.use("/api/v1/sales", saleRoutes);
+
+console.log("Registering sale receipt routes...");
 app.use("/api/v1/sale-receipts", saleReciptRoutes);
+
+console.log("Registering financial report routes...");
 app.use("/api/v1/financial-reports", financialReportRoutes);
 
-app.use("*", (req, res) => {
+app.use((req, res) => {
     res.status(404).json({
         status: 404,
         message: "Route not found",

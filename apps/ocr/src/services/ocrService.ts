@@ -27,6 +27,7 @@ import {
 import { FileUploadService } from "./fileUploadService";
 import sharp from "sharp";
 import * as fs from "fs";
+import { PaymentMethod } from "@repo/common";
 
 let Fuse: any;
 const getFuseInstance = async () => {
@@ -134,7 +135,7 @@ interface ProcessedPaymentData {
     partyName: string;
     amount: number;
     date: string;
-    method?: string;
+    method?: PaymentMethod;
     reference?: string;
 }
 
@@ -143,7 +144,7 @@ interface ProcessedReceiptData {
     receiptNo?: string;
     amount: number;
     date: string;
-    method?: string;
+    method?: PaymentMethod;
 }
 
 // Type for ExtractedData stored in Prisma JSON field
@@ -1019,6 +1020,7 @@ export class OCRService {
                 partyId: party.id,
                 userId,
                 status: "COMPLETED",
+                sequenceNo: processedData.reference || voucherId,
             },
         });
 

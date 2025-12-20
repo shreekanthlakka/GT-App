@@ -2,39 +2,48 @@
     "name": "@repo/common",
     "version": "1.0.0",
     "description": "common package for schemas, types, subjects and topics",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
+    "main": "./dist/cjs/index.js",
+    "types": "./dist/cjs/index.d.ts",
     "type": "commonjs",
     "exports": {
         ".": {
-            "types": "./dist/index.d.ts",
-            "default": "./dist/index.js"
+            "types": "./dist/cjs/index.d.ts",
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js",
+            "default": "./dist/cjs/index.js"
         },
         "./subjects": {
-            "types": "./dist/subjects/index.d.ts",
-            "default": "./dist/subjects/index.js"
+            "types": "./dist/cjs/subjects/index.d.ts",
+            "import": "./dist/esm/subjects/index.js",
+            "require": "./dist/cjs/subjects/index.js"
         },
         "./schemas": {
-            "types": "./dist/schemas/index.d.ts",
-            "default": "./dist/schemas/index.js"
+            "types": "./dist/cjs/schemas/index.d.ts",
+            "import": "./dist/esm/schemas/index.js",
+            "require": "./dist/cjs/schemas/index.js"
         },
         "./types": {
-            "types": "./dist/types/index.d.ts",
-            "default": "./dist/types/index.js"
+            "types": "./dist/cjs/types/index.d.ts",
+            "import": "./dist/esm/types/index.js",
+            "require": "./dist/cjs/types/index.js"
         },
         "./ecommSchemas": {
-            "types": "./dist/schemas/ecommSchemas.d.ts",
-            "default": "./dist/schemas/ecommSchemas.js"
+            "types": "./dist/cjs/schemas/ecommSchemas.d.ts",
+            "import": "./dist/esm/schemas/ecommSchemas.js",
+            "require": "./dist/cjs/schemas/ecommSchemas.js"
         },
         "./topics": {
-            "types": "./dist/kafkaTopics/index.d.ts",
-            "default": "./dist/kafkaTopics/index.js"
+            "types": "./dist/cjs/kafkaTopics/index.d.ts",
+            "import": "./dist/esm/kafkaTopics/index.js",
+            "require": "./dist/cjs/kafkaTopics/index.js"
         }
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "tsc -b --watch",
-        "build": "tsc -b",
+        "dev": "tsc --watch",
+        "build": "npm run build:cjs && npm run build:esm",
+        "build:cjs": "tsc",
+        "build:esm": "tsc -p tsconfig.esm.json",
         "clean": "rm -rf dist"
     },
     "keywords": [],

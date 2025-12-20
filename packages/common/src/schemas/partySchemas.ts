@@ -52,6 +52,8 @@ export const PartyQuerySchema = PaginationSchema.extend({
     email: z.string().optional(),
     category: z.string().optional(),
     isActive: z.coerce.boolean().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
 });
 
 export type CreatePartyType = z.infer<typeof CreatePartySchema>;

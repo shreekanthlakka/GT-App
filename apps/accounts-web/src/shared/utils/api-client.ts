@@ -74,7 +74,7 @@ const createServiceClient = (baseURL: string) => {
 
 // Service clients
 export const authService = createServiceClient(
-    import.meta.env.VITE_AUTH_API_URL || "http://localhost:3002/api/v1"
+    import.meta.env.VITE_AUTH_API_URL || "http://localhost:3002/api/v1/internal"
 );
 
 export const accountsService = createServiceClient(

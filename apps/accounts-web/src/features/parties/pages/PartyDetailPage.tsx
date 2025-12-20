@@ -17,6 +17,7 @@ import {
     Globe,
     FileText,
 } from "lucide-react";
+import { Invoice } from "@repo/common/types";
 
 const PartyDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -95,7 +96,7 @@ const PartyDetailPage = () => {
                         Total Invoices
                     </h3>
                     <p className="text-2xl font-bold text-purple-600">
-                        {invoices?.length || 0}
+                        {invoices?.data.length || 0}
                     </p>
                 </Card>
             </div>
@@ -244,13 +245,13 @@ const PartyDetailPage = () => {
             )}
 
             {/* Invoice History */}
-            {invoices && invoices.length > 0 && (
+            {invoices && invoices.data.length > 0 && (
                 <Card className="p-6">
                     <h3 className="text-lg font-semibold mb-4">
                         Recent Invoices
                     </h3>
                     <div className="space-y-2">
-                        {invoices.slice(0, 10).map((invoice: any) => (
+                        {invoices.data.slice(0, 10).map((invoice: Invoice) => (
                             <div
                                 key={invoice.id}
                                 className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
@@ -291,7 +292,7 @@ const PartyDetailPage = () => {
                             </div>
                         ))}
                     </div>
-                    {invoices.length > 10 && (
+                    {invoices.data.length > 10 && (
                         <Button
                             variant="outline"
                             className="w-full mt-4"

@@ -220,8 +220,8 @@ export const createSale = asyncHandler(async (req, res) => {
         saleNo: sale.saleNo,
         customerId: sale.customerId,
         customerName: sale.customer.name,
-        customerPhone: sale.customer.phone,
-        customerEmail: sale.customer.email,
+        customerPhone: sale.customer.phone || undefined,
+        customerEmail: sale.customer.email || undefined,
         date: sale.date.toISOString(),
         amount: Number(sale.amount),
         paidAmount: Number(sale.paidAmount),
@@ -879,7 +879,7 @@ export const getSaleAnalytics = asyncHandler(async (req, res) => {
                 count: trend._count,
                 averageValue:
                     trend._count > 0
-                        ? (trend._sum.amount || 0) / trend._count
+                        ? (Number(trend._sum.amount) || 0) / trend._count
                         : 0,
             })),
         }
@@ -1214,7 +1214,7 @@ export const markSaleAsPaid = asyncHandler(async (req, res) => {
             paymentId: result.receipt.id,
             paidAt: paymentDate.toISOString(),
             userId,
-            receiptNumber: result.receipt.receiptNumber,
+            receiptNumber: result.receipt.receiptNo,
         });
     }
 
@@ -1245,10 +1245,14 @@ export const markSaleAsPaid = asyncHandler(async (req, res) => {
 
 export const getSalesSummary = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
-    const { startDate, endDate, customerId, partyId, paymentStatus, groupBy } =
-        req.query;
+    const { startDate, endDate, partyId, paymentStatus, groupBy } = req.query;
 
     if (!userId) return;
+
+    const customerId =
+        typeof req.query.customerId === "string"
+            ? req.query.customerId
+            : undefined;
 
     const start = startDate
         ? new Date(startDate as string)
@@ -1299,7 +1303,7 @@ export const getSalesSummary = asyncHandler(async (req, res) => {
                 where: {
                     userId,
                     date: { gte: start, lte: end },
-                    ...(customerId && { customerId }),
+                    ...(customerId ? { customerId } : {}),
                 },
                 _sum: { amount: true },
                 _count: true,
@@ -1308,7 +1312,7 @@ export const getSalesSummary = asyncHandler(async (req, res) => {
     );
 
     // Grouping based on request
-    let groupedData: any[] = [];
+    let groupedData;
     if (groupBy === "day" || groupBy === "week" || groupBy === "month") {
         const dateFormat =
             groupBy === "day" ? "day" : groupBy === "week" ? "week" : "month";
@@ -1382,7 +1386,7 @@ export const getSalesSummary = asyncHandler(async (req, res) => {
                 count: pm._count,
                 totalAmount: Number(pm._sum.amount) || 0,
             })),
-            ...(groupedData.length > 0 && { groupedData }),
+            ...(groupedData && groupedData.length > 0 && { groupedData }),
         }
     );
     res.status(response.statusCode).json(response);

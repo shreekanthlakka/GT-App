@@ -42,13 +42,14 @@ app.use((req, res, next) => {
 // ROUTES
 // ========================================
 
+console.log("Registering ocrRoutes...");
 app.use("/api/v1/ocr", ocrRoutes);
 
 // ========================================
 // 404 HANDLER
 // ========================================
 
-app.use("*", (req, res) => {
+app.use((req, res) => {
     res.status(404).json({
         status: 404,
         message: "Route not found",

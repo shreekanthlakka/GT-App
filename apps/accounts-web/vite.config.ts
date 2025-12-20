@@ -11,6 +11,9 @@ export default defineConfig({
             "@repo/ui": path.resolve(__dirname, "../../packages/ui/src"),
         },
     },
+    optimizeDeps: {
+        include: ["@repo/common/schemas", "@repo/common/types"],
+    },
     server: {
         port: 3000,
         host: true,

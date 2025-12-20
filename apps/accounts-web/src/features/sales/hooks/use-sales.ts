@@ -8,7 +8,7 @@ import type {
     UpdateSaleType,
     SaleQueryType,
 } from "@repo/common/schemas";
-import { ApiErrorResponse, DateRange } from "@repo/common/types";
+import { ApiErrorResponse } from "@repo/common/types";
 import { AxiosError } from "axios";
 
 export const SALE_QUERY_KEYS = {
@@ -19,8 +19,12 @@ export const SALE_QUERY_KEYS = {
     details: () => [...SALE_QUERY_KEYS.all, "detail"] as const,
     detail: (id: string) => [...SALE_QUERY_KEYS.details(), id] as const,
     overdue: () => [...SALE_QUERY_KEYS.all, "overdue"] as const,
-    analytics: (params?: any) =>
-        [...SALE_QUERY_KEYS.all, "analytics", params] as const,
+    analytics: (params?: {
+        startDate?: string;
+        endDate?: string;
+        limit?: number;
+        sort?: "asc" | "desc";
+    }) => [...SALE_QUERY_KEYS.all, "analytics", params] as const,
 };
 
 // Get all sales
@@ -49,7 +53,12 @@ export const useOverdueSales = () => {
 };
 
 // Get sale analytics
-export const useSaleAnalytics = (params?: DateRange) => {
+export const useSaleAnalytics = (params?: {
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    sort?: "asc" | "desc";
+}) => {
     return useQuery({
         queryKey: SALE_QUERY_KEYS.analytics(params),
         queryFn: () => salesApi.getSaleAnalytics(params),

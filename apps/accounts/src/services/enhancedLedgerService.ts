@@ -721,23 +721,24 @@ export class EnhancedLedgerService {
 
                 const entry = monthlyEntries.get(month)!;
                 const isInterstate = sale.customer?.state !== user?.state;
-                const taxableValue = sale.totalAmount - sale.taxAmount;
+                const taxableValue =
+                    Number(sale.amount) - Number(sale.taxAmount);
 
                 if (sale.customer?.gstNumber) {
                     entry.gstr1.b2b.taxableValue += taxableValue;
                     if (isInterstate) {
-                        entry.gstr1.b2b.igst += sale.taxAmount;
+                        entry.gstr1.b2b.igst += Number(sale.taxAmount);
                     } else {
-                        entry.gstr1.b2b.cgst += sale.taxAmount / 2;
-                        entry.gstr1.b2b.sgst += sale.taxAmount / 2;
+                        entry.gstr1.b2b.cgst += Number(sale.taxAmount) / 2;
+                        entry.gstr1.b2b.sgst += Number(sale.taxAmount) / 2;
                     }
                 } else {
                     entry.gstr1.b2c.taxableValue += taxableValue;
                     if (isInterstate) {
-                        entry.gstr1.b2c.igst += sale.taxAmount;
+                        entry.gstr1.b2c.igst += Number(sale.taxAmount);
                     } else {
-                        entry.gstr1.b2c.cgst += sale.taxAmount / 2;
-                        entry.gstr1.b2c.sgst += sale.taxAmount / 2;
+                        entry.gstr1.b2c.cgst += Number(sale.taxAmount) / 2;
+                        entry.gstr1.b2c.sgst += Number(sale.taxAmount) / 2;
                     }
                 }
             }
@@ -750,14 +751,15 @@ export class EnhancedLedgerService {
 
                 const entry = monthlyEntries.get(month)!;
                 const isInterstate = invoice.party?.state !== user?.state;
-                const taxableValue = invoice.totalAmount - invoice.taxAmount;
+                const taxableValue =
+                    Number(invoice.amount) - Number(invoice.taxAmount);
 
                 entry.gstr2.b2b.taxableValue += taxableValue;
                 if (isInterstate) {
-                    entry.gstr2.b2b.igst += invoice.taxAmount;
+                    entry.gstr2.b2b.igst += Number(invoice.taxAmount);
                 } else {
-                    entry.gstr2.b2b.cgst += invoice.taxAmount / 2;
-                    entry.gstr2.b2b.sgst += invoice.taxAmount / 2;
+                    entry.gstr2.b2b.cgst += Number(invoice.taxAmount) / 2;
+                    entry.gstr2.b2b.sgst += Number(invoice.taxAmount) / 2;
                 }
             }
 
@@ -874,21 +876,21 @@ export class EnhancedLedgerService {
             let totalTDSDeducted = 0;
 
             for (const payment of payments) {
-                const tdsRate = this.getTDSRate(payment.amount);
-                const tdsAmount = (payment.amount * tdsRate) / 100;
+                const tdsRate = this.getTDSRate(Number(payment.amount));
+                const tdsAmount = (Number(payment.amount) * tdsRate) / 100;
 
                 if (tdsAmount > 0) {
                     entries.push({
                         date: payment.date,
                         partyName: payment.party?.name || "Unknown",
                         panNumber: payment.party?.panNumber || "",
-                        paymentAmount: payment.amount,
+                        paymentAmount: Number(payment.amount),
                         tdsRate,
                         tdsAmount,
-                        tdsSection: this.getTDSSection(payment.amount),
+                        tdsSection: this.getTDSSection(Number(payment.amount)),
                     });
 
-                    totalPayments += payment.amount;
+                    totalPayments += Number(payment.amount);
                     totalTDSDeducted += tdsAmount;
                 }
             }
@@ -1281,10 +1283,10 @@ export class EnhancedLedgerService {
                 date: { gte: startDate, lte: endDate },
                 status: { not: "CANCELLED" },
             },
-            _sum: { totalAmount: true },
+            _sum: { amount: true },
         });
 
-        return result._sum.totalAmount || 0;
+        return result._sum?.amount || 0;
     }
 
     private static async getTotalPurchases(
@@ -1298,10 +1300,10 @@ export class EnhancedLedgerService {
                 date: { gte: startDate, lte: endDate },
                 status: { not: InvoiceStatus.CANCELLED },
             },
-            _sum: { totalAmount: true },
+            _sum: { amount: true },
         });
 
-        return result._sum.totalAmount || 0;
+        return result._sum?.amount || 0;
     }
 
     private static async getInventoryValue(

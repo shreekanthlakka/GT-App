@@ -441,7 +441,7 @@ export const approveOCRData = asyncHandler(async (req, res) => {
         createdRecordId,
         createdRecordType,
         autoApproved: false,
-        jobId: ocrData.jobId,
+        jobId: ocrData.id,
     });
 
     logger.info("OCR data approved", LogCategory.OCR, {
